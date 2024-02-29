@@ -25,7 +25,7 @@ void setup() {
 
 void loop() {
   //check command
-
+    if(Serial.available())
     if(inCom.check()){
       Serial.println(inCom.commandString);
       inCom.flush();
