@@ -6,11 +6,15 @@ serialCommand::serialCommand()
 commandString.reserve(200);
 }
 bool serialCommand::check() {
+if(inChar=='\r'||inChar=='\n'){
+    return true;
+}
  while (Serial.available()) {
     // get the new byte:
     inChar = (char)Serial.read();
     Serial.print(inChar);
-    if(inChar=='\n'){
+    if(inChar=='\r'||inChar=='\n'){
+        Serial.println("");
         return true;
     }
     // add it to the commandString:

@@ -1,18 +1,44 @@
 #include <Arduino.h>
+#include <serialCommand.h>
 
-// put function declarations here:
-int myFunction(int, int);
+#include <TFT_eSPI.h>
 
+String serialcommand(bool flush);
+
+TFT_eSPI tft = TFT_eSPI();
+TFT_eSprite img = TFT_eSprite(&tft);
+
+serialCommand inCom;
+//init misc var
+  bool debug=0;
 void setup() {
-  // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+  //init serial
+    Serial.begin(115200);
+  //init TFT
+    tft.init();
+    tft.setRotation(3);
+    tft.fillScreen(TFT_BLACK);
+    img.createSprite(240, 135);
+    img.fillSprite(TFT_BLACK);
+
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
+  //check command
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+    if(inCom.check()){
+      Serial.println(inCom.commandString);
+      inCom.flush();
+    }
+
+    delay(50);
+    img.fillSprite(TFT_BLACK);
+    img.setTextSize(2);
+    img.setTextColor(TFT_WHITE);
+    img.setCursor(0, 0, 2);
+    img.println(inCom.commandString); 
+
+    img.pushSprite(0, 0);
+      
+
 }
