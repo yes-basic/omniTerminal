@@ -1,6 +1,6 @@
 #include "Arduino.h"
 #include "serialCommand.h"
-
+#include <vector>
 serialCommand::serialCommand()
 {
 commandString.reserve(200);
@@ -12,7 +12,7 @@ bool serialCommand::check() {
 
     while (Serial.available()) {
         // get the new byte:
-        inChar = (char)Serial.read();
+            inChar = (char)Serial.read();
   
         if(inChar=='\r'||inChar=='\n'){
             Serial.println("");
@@ -30,18 +30,37 @@ bool serialCommand::check() {
             commandString.remove(commandString.length()-1);
         }
 
-    //commandString.trim();
+        //commandString.trim();
     }
-return false;
+    return false;
 }
 
 void serialCommand::flush(){
-inChar=0;
-commandString="";
+    inChar=0;
+    commandString="";
 }
 
+String serialCommand::commandArray(int index){
+    int startIndex = 0;
+    int spaceIndex = 0;
+    int wordCount = 0;
 
-
-int serialCommand::thing(int num){
+    // Find spaces in the string and extract words
+    while (spaceIndex >= 0) {
+        spaceIndex = commandString.indexOf(' ', startIndex);
+        if (spaceIndex >= 0) {
+            wordCount++;
+            if (wordCount == index) {
+                return commandString.substring(startIndex, spaceIndex);
+            }
+            startIndex = spaceIndex + 1;  // Move to the next character after space
+        }
+    }
+        // If n is greater than the number of words, return the last word
+        if (index == wordCount + 1) {
+            return commandString.substring(startIndex);
+        }
+    // If n is out of range, return an empty string or handle as needed
+    return "";
 
 }

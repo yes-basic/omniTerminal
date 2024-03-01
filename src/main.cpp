@@ -14,7 +14,7 @@ serialCommand inCom;
 //init misc var
   bool debug=0;
   long millisLastRefresh;
-
+  int wordReturn=1;
 void setup() {
   //init serial
     Serial.begin(115200);
@@ -31,13 +31,19 @@ void loop() {
   //check command
     if(inCom.check()){
       Serial.println(inCom.commandString);
+      if(inCom.commandArray(1)=="/return"){
+        wordReturn=inCom.commandArray(2).toInt();
+        Serial.print("return set to:");Serial.println(inCom.commandArray(2));
+      }else{
+        Serial.println(inCom.commandArray(wordReturn));
+      }
       identifyCommand();
       inCom.flush();
     }
   refreshTFT();
 }
 void identifyCommand(){
-  //identify stuff
+  
 }
 void refreshTFT(){
   //refresh TFT

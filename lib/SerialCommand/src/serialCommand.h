@@ -2,18 +2,19 @@
 #define serialCommand_h
 
 #include "Arduino.h"
-
+#include <vector>
 class serialCommand
 {
   public:
     serialCommand();
     bool check();
     String getCommand();
-    int thing(int num);
     void flush();
+    String commandArray(int index);
     String commandString;
   private:
     char inChar;
+    
     
 };
 
