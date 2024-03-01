@@ -30,7 +30,7 @@ bool serialCommand::check() {
             commandString.remove(commandString.length()-1);
         }
 
-    commandString.trim();
+    //commandString.trim();
     }
 return false;
 }
