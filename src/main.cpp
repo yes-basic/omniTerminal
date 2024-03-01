@@ -32,7 +32,13 @@ void loop() {
   //check command
     if(inCom.check()){
       Serial.println(inCom.commandString);
-      inCom.commandArray(1).toCharArray(wordBuffer,sizeof(wordBuffer));
+      inCom.parseCommandArray();
+      for (int i = 0; i < inCom.wordsInCommand; i++) {
+        Serial.print("Word ");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(inCom.commandArray[i]);
+    }
 
       identifyCommand();
       inCom.flush();

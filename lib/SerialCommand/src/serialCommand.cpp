@@ -38,29 +38,33 @@ bool serialCommand::check() {
 void serialCommand::flush(){
     inChar=0;
     commandString="";
-}
-
-String serialCommand::commandArray(int index){
-    int startIndex = 0;
-    int spaceIndex = 0;
-    int wordCount = 0;
-
-    // Find spaces in the string and extract words
-    while (spaceIndex >= 0) {
-        spaceIndex = commandString.indexOf(' ', startIndex);
-        if (spaceIndex >= 0) {
-            wordCount++;
-            if (wordCount == index) {
-                return commandString.substring(startIndex, spaceIndex);
-            }
-            startIndex = spaceIndex + 1;  // Move to the next character after space
+    for (int i = 0; i <sizeof(commandArray)/sizeof(commandArray[0]); i++) {
+        for (int j = 0; j < sizeof(commandArray[0]); j++) {
+            commandArray[i][j] = '\0';  // Set each character to null
         }
     }
-        // If n is greater than the number of words, return the last word
-        if (index == wordCount + 1) {
-            return commandString.substring(startIndex);
-        }
-    // If n is out of range, return an empty string or handle as needed
-    return "";
+}
 
+void serialCommand::parseCommandArray(){
+    int wordIndex = 0;
+    int wordLength = 0;
+    for (int i = 0; i < commandString.length(); i++) {
+        char c = commandString.charAt(i);
+
+        // If current character is not a space, add it to current word
+        if (c != ' ' && c != '\0') {
+            commandArray[wordIndex][wordLength++] = c;
+        } else {
+            commandArray[wordIndex++][wordLength] = '\0';  // Null-terminate the word
+            wordLength = 0;  // Reset word length for next word
+        }
+
+        // Break if we have reached the maximum number of words
+        if (wordIndex >= sizeof(commandArray)/sizeof(commandArray[0])) {
+            Serial.println("command array overflow");
+            break;
+        }
+
+    }
+    wordsInCommand=wordIndex+1;
 }

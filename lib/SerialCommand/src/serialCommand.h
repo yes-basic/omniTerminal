@@ -10,8 +10,10 @@ class serialCommand
     bool check();
     String getCommand();
     void flush();
-    String commandArray(int index);
+    void parseCommandArray();
+    char commandArray[20][20];
     String commandString;
+    int wordsInCommand;
   private:
     char inChar;
     
