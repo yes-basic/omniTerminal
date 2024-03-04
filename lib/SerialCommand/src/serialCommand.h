@@ -14,6 +14,7 @@ class serialCommand
     char commandArray[20][20];
     String commandString;
     int wordsInCommand;
+    int multiComp(char command[20],char staticArray[50][20]);
   private:
     char inChar;
     

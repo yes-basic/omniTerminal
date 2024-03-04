@@ -8,6 +8,7 @@ commandString.reserve(200);
 bool serialCommand::check() {
     if(inChar=='\r'||inChar=='\n'){
         return true;
+        commandString.trim();
     }
 
     while (Serial.available()) {
@@ -17,6 +18,7 @@ bool serialCommand::check() {
         if(inChar=='\r'||inChar=='\n'){
             Serial.println("");
             return true;
+            commandString.trim();
         }
         //backspace charactor is 127
         if(inChar!=127){
@@ -30,7 +32,7 @@ bool serialCommand::check() {
             commandString.remove(commandString.length()-1);
         }
 
-        //commandString.trim();
+        
     }
     return false;
 }
@@ -67,4 +69,12 @@ void serialCommand::parseCommandArray(){
 
     }
     wordsInCommand=wordIndex+1;
+}
+int serialCommand::multiComp(char command[20],char staticArray[50][20]){
+    for(int i=0;i<50;i++){
+        if(!strcmp(command,staticArray[i])){return i;}
+        Serial.println(i);
+    }
+    Serial.println("nocmp");
+    return -1;
 }

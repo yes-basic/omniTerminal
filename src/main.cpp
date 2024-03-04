@@ -16,6 +16,15 @@ serialCommand inCom;
   long millisLastRefresh;
   int wordReturn=1;
   char wordBuffer[30];
+  int commandInt;
+//init command array
+  char commandIndex[50][20]={
+    "/help",
+    "/command",
+    "/123",
+    "/debug"
+  };
+  int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
 void setup() {
   //init serial
     Serial.begin(115200);
@@ -46,6 +55,24 @@ void loop() {
   refreshTFT();
 }
 void identifyCommand(){
+  if(!strcmp(inCom.commandArray[0],"/test")){
+    Serial.println(inCom.commandArray[1]);
+  }else{
+    Serial.println(inCom.commandArray[0]);
+  }
+  commandInt=inCom.multiComp(inCom.commandArray[0],commandIndex);
+  Serial.println(commandInt);
+  switch(commandInt){
+    case 0:
+    Serial.println("commands:");
+    for(int i=0;i<commandIndexWords;i++){
+      if(commandIndex[i][0]!='\0'){
+      Serial.println(commandIndex[i]);
+      }
+    }
+    break;
+
+  }
   
 }
 void refreshTFT(){
