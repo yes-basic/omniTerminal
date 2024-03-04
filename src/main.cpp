@@ -21,7 +21,7 @@ serialCommand inCom;
   char commandIndex[50][20]={
     "/help",
     "/debug",
-    "/123",
+    "/add",
     "/command"
   };
   int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
@@ -47,7 +47,9 @@ void loop() {
           Serial.print("Word ");
           Serial.print(i);
           Serial.print(": ");
-          Serial.println(inCom.commandArray[i]);
+          Serial.print("\"");
+          Serial.print(inCom.commandArray[i]);
+          Serial.println("\"");
         }
       }
       identifyCommand();
@@ -74,6 +76,7 @@ void identifyCommand(){
           Serial.println(commandIndex[i]);
           }
         }
+        Serial.println("----");
         break;
       //debug 
         case 1:
@@ -84,11 +87,30 @@ void identifyCommand(){
           Serial.println("debug off");
         }
         break;
+      //add
+        case 2:
+        if (inCom.isValidLong(inCom.commandArray[1])&&inCom.isValidLong(inCom.commandArray[2])){
+          Serial.print(atol(inCom.commandArray[1]));
+          Serial.print("+");
+          Serial.print(atol(inCom.commandArray[2]));
+          Serial.print("=");
+          Serial.println(atol(inCom.commandArray[1])+atol(inCom.commandArray[2]));
+        }else{
+          Serial.println("not valid numbers");
+          if(debug){
+            Serial.print(inCom.isValidLong(inCom.commandArray[1]));
+            Serial.println(inCom.isValidLong(inCom.commandArray[2]));
+          }
+        }
+        break;
+        
 
 
     }
   
 }
+
+
 void refreshTFT(){
   //refresh TFT
     if(millis()-millisLastRefresh>50){

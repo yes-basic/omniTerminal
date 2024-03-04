@@ -79,3 +79,40 @@ int serialCommand::multiComp(char command[20],char staticArray[50][20]){
     if(debug){Serial.println("nocmp");}
     return -1;
 }
+
+bool serialCommand::isValidLong(char* str) {
+  // Check if the string is empty
+  if (strlen(str) == 0) {
+    return false;
+  }
+
+  // Check each character to ensure it's a digit or a valid sign
+  for (int i = 0; i < strlen(str); i++) {
+    if (!isdigit(str[i]) && str[i] != '-' && str[i] != '+') {
+      return false;
+    }
+  }
+
+  // Check if the string is only a sign without any digits
+  if (strlen(str) == 1 && (str[0] == '-' || str[0] == '+')) {
+    return false;
+  }
+
+  // Check if the string exceeds the limits of a long
+  if (strlen(str) > 11) {  // 11 because of sign and 10 digits for long
+    return false;
+  }
+
+  // Use strtol to further validate
+  char* endPtr;
+  long value = strtol(str, &endPtr, 10);
+
+  // Check if strtol successfully converted the string
+  // Also check if there are any trailing characters that strtol ignored
+  for (int i = 0; i < strlen(endPtr); i++) {
+    if (!isspace(endPtr[i]) && endPtr[i] != '\0') {
+      return false;
+    }
+  }
+return true;
+}

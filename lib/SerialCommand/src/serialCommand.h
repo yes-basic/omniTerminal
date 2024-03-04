@@ -16,6 +16,7 @@ class serialCommand
     String commandString;
     int wordsInCommand;
     int multiComp(char command[20],char staticArray[50][20]);
+    bool isValidLong(char* str);
   private:
     char inChar;
     
