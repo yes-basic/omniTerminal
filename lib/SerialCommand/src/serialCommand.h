@@ -7,6 +7,7 @@ class serialCommand
 {
   public:
     serialCommand();
+    bool debug;
     bool check();
     String getCommand();
     void flush();

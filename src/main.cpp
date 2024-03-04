@@ -2,7 +2,7 @@
 #include <serialCommand.h>
 
 #include <TFT_eSPI.h>
-
+#define debug inCom.debug
 void refreshTFT();
 void identifyCommand();
 String serialcommand(bool flush);
@@ -12,7 +12,7 @@ TFT_eSprite img = TFT_eSprite(&tft);
 
 serialCommand inCom;
 //init misc var
-  bool debug=0;
+  
   long millisLastRefresh;
   int wordReturn=1;
   char wordBuffer[30];
@@ -20,9 +20,9 @@ serialCommand inCom;
 //init command array
   char commandIndex[50][20]={
     "/help",
-    "/command",
+    "/debug",
     "/123",
-    "/debug"
+    "/command"
   };
   int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
 void setup() {
@@ -40,39 +40,53 @@ void setup() {
 void loop() {
   //check command
     if(inCom.check()){
-      Serial.println(inCom.commandString);
+      if(debug){Serial.println(inCom.commandString);}
       inCom.parseCommandArray();
-      for (int i = 0; i < inCom.wordsInCommand; i++) {
-        Serial.print("Word ");
-        Serial.print(i);
-        Serial.print(": ");
-        Serial.println(inCom.commandArray[i]);
-    }
-
+      if(debug){
+        for (int i = 0; i < inCom.wordsInCommand; i++) {
+          Serial.print("Word ");
+          Serial.print(i);
+          Serial.print(": ");
+          Serial.println(inCom.commandArray[i]);
+        }
+      }
       identifyCommand();
       inCom.flush();
     }
   refreshTFT();
 }
-void identifyCommand(){
-  if(!strcmp(inCom.commandArray[0],"/test")){
-    Serial.println(inCom.commandArray[1]);
-  }else{
-    Serial.println(inCom.commandArray[0]);
-  }
-  commandInt=inCom.multiComp(inCom.commandArray[0],commandIndex);
-  Serial.println(commandInt);
-  switch(commandInt){
-    case 0:
-    Serial.println("commands:");
-    for(int i=0;i<commandIndexWords;i++){
-      if(commandIndex[i][0]!='\0'){
-      Serial.println(commandIndex[i]);
-      }
-    }
-    break;
 
-  }
+void identifyCommand(){
+  //find the command
+    commandInt=inCom.multiComp(inCom.commandArray[0],commandIndex);
+    if(debug){Serial.println(commandInt);}
+  //do the command
+    switch(commandInt){
+      //not recognized
+        case -1:
+          Serial.println("not recognized command");
+        break;
+      //help
+        case 0:
+        Serial.println("commands:");
+        for(int i=0;i<commandIndexWords;i++){
+          if(commandIndex[i][0]!='\0'){
+          Serial.println(commandIndex[i]);
+          }
+        }
+        break;
+      //debug 
+        case 1:
+        debug=!debug;
+        if(debug){
+          Serial.println("debug on");
+        }else{
+          Serial.println("debug off");
+        }
+        break;
+
+
+    }
   
 }
 void refreshTFT(){

@@ -71,10 +71,11 @@ void serialCommand::parseCommandArray(){
     wordsInCommand=wordIndex+1;
 }
 int serialCommand::multiComp(char command[20],char staticArray[50][20]){
-    for(int i=0;i<50;i++){
+    int staticArrayWords=50;
+    for(int i=0;i<staticArrayWords;i++){
         if(!strcmp(command,staticArray[i])){return i;}
-        Serial.println(i);
+        if(debug){Serial.println(i);}
     }
-    Serial.println("nocmp");
+    if(debug){Serial.println("nocmp");}
     return -1;
 }
