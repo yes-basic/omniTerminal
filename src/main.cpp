@@ -7,6 +7,16 @@ void refreshTFT();
 void identifyCommand();
 String serialcommand(bool flush);
 
+#define DISABLE_CODE_FOR_RECEIVER // Disables restarting receiver after each send. Saves 450 bytes program memory and 269 bytes RAM if receiving functions are not used.
+//#define SEND_PWM_BY_TIMER         // Disable carrier PWM generation in software and use (restricted) hardware PWM.
+//#define USE_NO_SEND_PWM           // Use no carrier PWM, just simulate an active low receiver signal. Overrides SEND_PWM_BY_TIMER definition
+
+/*
+ * This include defines the actual pin number for pins like IR_RECEIVE_PIN, IR_SEND_PIN for many different boards and architectures
+ */
+#include "PinDefinitionsAndMore.h"
+#include <IRremote.hpp> // include the library
+
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite img = TFT_eSprite(&tft);
 
@@ -35,7 +45,17 @@ void setup() {
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
 
+    IrSender.begin(DISABLE_LED_FEEDBACK); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
 }
+
+/*
+ * Set up the data to be sent.
+ * For most protocols, the data is build up with a constant 8 (or 16 byte) address
+ * and a variable 8 bit command.
+ * There are exceptions like Sony and Denon, which have 5 bit address.
+ */
+uint8_t sCommand = 0x34;
+uint8_t sRepeats = 0;
 
 void loop() {
   //check command
