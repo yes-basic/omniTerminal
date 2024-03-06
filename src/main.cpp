@@ -44,7 +44,7 @@ void loop() {
      * Print current send values
      */
     Serial.println();
-    Serial.print(F("Send now: address=0x00, command=0x"));
+    Serial.print(F("Send now: address=0x1, command=0x"));
     Serial.print(sCommand, HEX);
     Serial.print(F(", repeats="));
     Serial.print(sRepeats);
@@ -54,17 +54,9 @@ void loop() {
     Serial.flush();
 
     // Receiver output for the first loop must be: Protocol=NEC Address=0x102 Command=0x34 Raw-Data=0xCB340102 (32 bits)
-    IrSender.sendNEC(0x00, sCommand, sRepeats);
+    IrSender.sendNEC(0x1, sCommand, sRepeats);
 
-    /*
-     * Increment send values
-     */
-    sCommand += 0x11;
-    sRepeats++;
-    // clip repeats at 4
-    if (sRepeats > 4) {
-        sRepeats = 4;
-    }
+
 
     delay(1000);  // delay must be greater than 5 ms (RECORD_GAP_MICROS), otherwise the receiver sees it as one long signal
 }
