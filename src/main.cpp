@@ -65,6 +65,7 @@
 //+=============================================================================
 // Configure the Arduino
 //
+int num=0;
 void setup() {
     
 
@@ -97,10 +98,15 @@ void setup() {
 void loop() {
     if (IrReceiver.decode()) {  // Grab an IR code
         // At 115200 baud, printing takes 200 ms for NEC protocol and 70 ms for NEC repeat
-        Serial.println(); // blank line between entries
-        Serial.println(); // 2 blank lines between entries
-        IrReceiver.printIRResultShort(&Serial);
+        
+        if(IrReceiver.decodedIRData.protocol != UNKNOWN){
+            Serial.println();
+            Serial.print(num++); Serial.print(": ");
+            IrReceiver.printIRResultShort(&Serial);
+
+        }    
         // Check if the buffer overflowed
+        /*
         if (IrReceiver.decodedIRData.flags & IRDATA_FLAGS_WAS_OVERFLOW) {
             Serial.println(F("Try to increase the \"RAW_BUFFER_LENGTH\" value of " STR(RAW_BUFFER_LENGTH) " in " __FILE__));
             // see also https://github.com/Arduino-IRremote/Arduino-IRremote#compile-options--macros-for-this-library
@@ -125,13 +131,13 @@ void loop() {
             IrReceiver.printIRResultAsCVariables(&Serial);  // Output address and data as source code variables
 
             IrReceiver.compensateAndPrintIRResultAsPronto(&Serial);
-
-            /*
-             * Example for using the compensateAndStorePronto() function.
-             * Creating this String requires 2210 bytes program memory and 10 bytes RAM for the String class.
-             * The String object itself requires additional 440 bytes RAM from the heap.
-             * This values are for an Arduino UNO.
-             */
+            
+            
+              //Example for using the compensateAndStorePronto() function.
+              //Creating this String requires 2210 bytes program memory and 10 bytes RAM for the String class.
+              //The String object itself requires additional 440 bytes RAM from the heap.
+              //This values are for an Arduino UNO.
+             
 //        Serial.println();                                     // blank line between entries
 //        String ProntoHEX = F("Pronto HEX contains: ");        // Assign string to ProtoHex string object
 //        if (int size = IrReceiver.compensateAndStorePronto(&ProntoHEX)) {   // Dump the content of the IReceiver Pronto HEX to the String object
@@ -145,6 +151,7 @@ void loop() {
 //            Serial.println();                                 // blank line between entries
 //        }
         }
+        */
         IrReceiver.resume();                            // Prepare for the next value
     }
 }
