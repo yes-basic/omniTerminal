@@ -1,16 +1,12 @@
 #include <Arduino.h>
 #include <serialCommand.h>
-
 #include <TFT_eSPI.h>
+#include "SPI.h"
 #define debug inCom.debug
 void refreshTFT();
 void identifyCommand();
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
-
-#define DISABLE_CODE_FOR_RECEIVER // Disables restarting receiver after each send. Saves 450 bytes program memory and 269 bytes RAM if receiving functions are not used.
-//#define SEND_PWM_BY_TIMER         // Disable carrier PWM generation in software and use (restricted) hardware PWM.
-//#define USE_NO_SEND_PWM           // Use no carrier PWM, just simulate an active low receiver signal. Overrides SEND_PWM_BY_TIMER definition
 
 /*
  * This include defines the actual pin number for pins like IR_RECEIVE_PIN, IR_SEND_PIN for many different boards and architectures
@@ -32,7 +28,7 @@ TFT_eSprite img = TFT_eSprite(&tft);
 
 serialCommand inCom;
 //init misc var
-  
+  char breakChar='a';
   long millisLastRefresh;
   int wordReturn=1;
   char wordBuffer[30];
@@ -43,7 +39,7 @@ serialCommand inCom;
       "/help",
       "/debug",
       "/add",
-      "/IR"
+      "/ir"
 
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
@@ -71,8 +67,8 @@ serialCommand inCom;
       "panasonic",
       "DENON",
       "denon", 
-      "RECIEVE",
-      "recieve"
+      "receive",
+      "rec"
 
     };
 void setup() {
@@ -84,8 +80,8 @@ void setup() {
     tft.fillScreen(TFT_BLACK);
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
-    IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);
-    IrSender.begin(DISABLE_LED_FEEDBACK); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
+    IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
+    IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
 }
 
 
@@ -156,71 +152,95 @@ void identifyCommand(){
         }
         break;
       //IR
-        case 3:
-          if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-            long address=strtol(inCom.commandArray[2],NULL,16);
-            long send=strtol(inCom.commandArray[3],NULL,16);
-            
-            int index=inCom.multiComp(inCom.commandArray[1],IRprotocolIndex)+1;
-            if(index%2==0){index--;}
-            if(debug){Serial.print("index:");Serial.println(index);}
-            switch (index){
-            case-1:
-            Serial.println("invalid protocol");
-            break;
-            case 1:
-            IrSender.sendNEC(address,send,0);
-            break;
-            case 3:
-            IrSender.sendSony(address,send,0);
-            break;
-            case 5:
-            IrSender.sendRC5(address,send,0);
-            break;
-            case 7:
-            IrSender.sendRC6(address,send,0);
-            break;
-            case 9:
-            IrSender.sendSharp(address,send,0);
-            break;
-            case 11:
-            IrSender.sendJVC(address,send,0);
-            break;
-            case 13:
-            IrSender.sendSamsung(address,send,0);
-            break;
-            case 15:
-            IrSender.sendLG(address,send,0);
-            break;
-            case 17:
-            Serial.println("protocol is WIP");
-            break;
-            case 19:
-            IrSender.sendPanasonic(address,send,0);
-            break;
-            case 21:
-            IrSender.sendDenon(address,send,0);
-            break;
-            case 23:
-              while(inCom.commandString==""){
-                inCom.check();
-                if(IrReceiver.decode()){
-                  if(IrReceiver.decodedIRData.protocol != UNKNOWN){
-                    IrReceiver.printIRResultShort(&Serial);
-                    Serial.println();
+        case 3:  
+          int index=inCom.multiComp(inCom.commandArray[1],IRprotocolIndex)+1;
+          if(index%2==0){index--;}
+          if(debug){Serial.print("index:");Serial.println(index);}
+          switch (index){
+            //not listed
+                case-1:
+                Serial.println("invalid protocol");
+                break;
+            //main protocols
+                case 1:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendNEC(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
                   }
-                  IrReceiver.resume();
-                }
-              }
-            break;
-            default:
-            Serial.println("protocol listed, not supported");
-            break;
-            }
-            
-          }else{
-            Serial.println("invalid input HEX");
+                break;
+                case 3:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendSony(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 5:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendRC5(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 7:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendRC6(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 9:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendSharp(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 11:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendJVC(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 13:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendSamsung(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 15:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendLG(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 17:
+                Serial.println("protocol is WIP");
+                break;
+                case 19:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendPanasonic(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+                case 21:
+                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+                    IrSender.sendDenon(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  }
+                break;
+            //enable reciever
+                case 23:
+                  breakChar='a';
+                  while(!Serial.available()){
+                    delay(250);
+                    if (IrReceiver.decode()) {
+                      if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
+                        Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
+                        // We have an unknown protocol here, print extended info
+                        IrReceiver.printIRResultRawFormatted(&Serial, true);
+                        IrReceiver.resume(); // Do it here, to preserve raw data for printing with printIRResultRawFormatted()
+                      } else {
+                        IrReceiver.resume(); // Early enable receiving of the next IR frame
+                        IrReceiver.printIRResultShort(&Serial);
+                        IrReceiver.printIRSendUsage(&Serial);
+                      }
+                      Serial.println();
+                    }
+                  }
+                break;
+            //listed in index not but not switch
+                default:
+                Serial.println("protocol listed, not supported");
+                break;
           }
+
           if(debug){
               Serial.println(strtol(inCom.commandArray[2],NULL,16),HEX);
               Serial.println(strtol(inCom.commandArray[3],NULL,16),HEX);
