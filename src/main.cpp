@@ -29,14 +29,41 @@ serialCommand inCom;
   char wordBuffer[30];
   int commandInt;
 //init command array
-  char commandIndex[50][20]={
-    "/help",
-    "/debug",
-    "/add",
-    "/IR"
+  //main array  
+    char commandIndex[50][20]={
+      "/help",
+      "/debug",
+      "/add",
+      "/IR"
 
-  };
-  int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
+    };
+    int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
+  //IR protocols
+    char IRprotocolIndex[50][20]={
+      "NEC",
+      "nec",
+      "SONY",
+      "sony",
+      "RC5",
+      "rc5",
+      "RC6",
+      "rc6",
+      "SHARP",
+      "sharp",
+      "JVC",
+      "jvc",
+      "SAMSUNG",
+      "samsung",
+      "LG",
+      "lg",
+      "WHYNTER",
+      "whynter",
+      "PANASONIC",
+      "panasonic",
+      "DENON",
+      "denon"
+
+    };
 void setup() {
   //init serial
     Serial.begin(115200);
@@ -119,14 +146,61 @@ void identifyCommand(){
         break;
       //IR
         case 3:
-          if (inCom.isValidHex(inCom.commandArray[1])&&inCom.isValidHex(inCom.commandArray[2])){
-            IrSender.sendNEC(strtol(inCom.commandArray[1],NULL,16),strtol(inCom.commandArray[2],NULL,16),0);
+          if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
+            long address=strtol(inCom.commandArray[2],NULL,16);
+            long send=strtol(inCom.commandArray[3],NULL,16);
+            
+            int index=inCom.multiComp(inCom.commandArray[1],IRprotocolIndex)+1;
+            if(index%2==0){index--;}
+            if(debug){Serial.print("index:");Serial.println(index);}
+            switch (index){
+            case-1:
+            Serial.println("invalid protocol");
+            break;
+            case 1:
+            IrSender.sendNEC(address,send,0);
+            break;
+            case 3:
+            IrSender.sendSony(address,send,0);
+            break;
+            case 5:
+            IrSender.sendRC5(address,send,0);
+            break;
+            case 7:
+            IrSender.sendRC6(address,send,0);
+            break;
+            case 9:
+            IrSender.sendSharp(address,send,0);
+            break;
+            case 11:
+            IrSender.sendJVC(address,send,0);
+            break;
+            case 13:
+            IrSender.sendSamsung(address,send,0);
+            break;
+            case 15:
+            IrSender.sendLG(address,send,0);
+            break;
+            case 17:
+            Serial.println("protocol is WIP");
+            break;
+            case 19:
+            IrSender.sendPanasonic(address,send,0);
+            break;
+            case 21:
+            IrSender.sendDenon(address,send,0);
+            break;
+            default:
+            Serial.println("protocol listed, not supported");
+            break;
+            }
+            
           }else{
-            Serial.println("invalid input");
+            Serial.println("invalid input HEX");
           }
           if(debug){
-              Serial.println(strtol(inCom.commandArray[1],NULL,16),HEX);
               Serial.println(strtol(inCom.commandArray[2],NULL,16),HEX);
+              Serial.println(strtol(inCom.commandArray[3],NULL,16),HEX);
 
           }
         break;
