@@ -6,6 +6,7 @@
 void refreshTFT();
 void identifyCommand();
 String serialcommand(bool flush);
+bool isValidHex(const char* str);
 
 #define DISABLE_CODE_FOR_RECEIVER // Disables restarting receiver after each send. Saves 450 bytes program memory and 269 bytes RAM if receiving functions are not used.
 //#define SEND_PWM_BY_TIMER         // Disable carrier PWM generation in software and use (restricted) hardware PWM.
@@ -32,7 +33,8 @@ serialCommand inCom;
     "/help",
     "/debug",
     "/add",
-    "/command"
+    "/IR"
+
   };
   int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
 void setup() {
@@ -48,14 +50,6 @@ void setup() {
     IrSender.begin(DISABLE_LED_FEEDBACK); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
 }
 
-/*
- * Set up the data to be sent.
- * For most protocols, the data is build up with a constant 8 (or 16 byte) address
- * and a variable 8 bit command.
- * There are exceptions like Sony and Denon, which have 5 bit address.
- */
-uint8_t sCommand = 0x34;
-uint8_t sRepeats = 0;
 
 void loop() {
   //check command
@@ -123,6 +117,19 @@ void identifyCommand(){
           }
         }
         break;
+      //IR
+        case 3:
+          if (inCom.isValidHex(inCom.commandArray[1])&&inCom.isValidHex(inCom.commandArray[2])){
+            IrSender.sendNEC(strtol(inCom.commandArray[1],NULL,16),strtol(inCom.commandArray[2],NULL,16),0);
+          }else{
+            Serial.println("invalid input");
+          }
+          if(debug){
+              Serial.println(strtol(inCom.commandArray[1],NULL,16),HEX);
+              Serial.println(strtol(inCom.commandArray[2],NULL,16),HEX);
+
+          }
+        break;
         
 
 
@@ -144,3 +151,6 @@ void refreshTFT(){
     }  
 
 }
+
+
+
