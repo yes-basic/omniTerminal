@@ -16,8 +16,17 @@ bool isValidHex(const char* str);
  * This include defines the actual pin number for pins like IR_RECEIVE_PIN, IR_SEND_PIN for many different boards and architectures
  */
 #include "PinDefinitionsAndMore.h"
+#if !defined(RAW_BUFFER_LENGTH)
+#  if RAMEND <= 0x4FF || RAMSIZE < 0x4FF
+#define RAW_BUFFER_LENGTH  180  // 750 (600 if we have only 2k RAM) is the value for air condition remotes. Default is 112 if DECODE_MAGIQUEST is enabled, otherwise 100.
+#  elif RAMEND <= 0x8FF || RAMSIZE < 0x8FF
+#define RAW_BUFFER_LENGTH  600  // 750 (600 if we have only 2k RAM) is the value for air condition remotes. Default is 112 if DECODE_MAGIQUEST is enabled, otherwise 100.
+#  else
+#define RAW_BUFFER_LENGTH  750  // 750 (600 if we have only 2k RAM) is the value for air condition remotes. Default is 112 if DECODE_MAGIQUEST is enabled, otherwise 100.
+#  endif
+#endif
+#define MARK_EXCESS_MICROS    20
 #include <IRremote.hpp> // include the library
-
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite img = TFT_eSprite(&tft);
 
@@ -61,7 +70,9 @@ serialCommand inCom;
       "PANASONIC",
       "panasonic",
       "DENON",
-      "denon"
+      "denon", 
+      "RECIEVE",
+      "recieve"
 
     };
 void setup() {
@@ -73,7 +84,7 @@ void setup() {
     tft.fillScreen(TFT_BLACK);
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
-
+    IrReceiver.begin(IR_RECEIVE_PIN, DISABLE_LED_FEEDBACK);
     IrSender.begin(DISABLE_LED_FEEDBACK); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
 }
 
@@ -189,6 +200,18 @@ void identifyCommand(){
             break;
             case 21:
             IrSender.sendDenon(address,send,0);
+            break;
+            case 23:
+              while(inCom.commandString==""){
+                inCom.check();
+                if(IrReceiver.decode()){
+                  if(IrReceiver.decodedIRData.protocol != UNKNOWN){
+                    IrReceiver.printIRResultShort(&Serial);
+                    Serial.println();
+                  }
+                  IrReceiver.resume();
+                }
+              }
             break;
             default:
             Serial.println("protocol listed, not supported");
