@@ -116,3 +116,19 @@ bool serialCommand::isValidLong(char* str) {
   }
 return true;
 }
+
+bool serialCommand::isValidHex(const char* str) {
+  // Check if the string is empty
+  if (strlen(str) == 0) {
+    return false;
+  }
+
+  // Check each character to ensure it's a valid hexadecimal character
+  for (int i = 0; i < strlen(str); i++) {
+    if (!isxdigit(str[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
