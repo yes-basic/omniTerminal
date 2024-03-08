@@ -217,21 +217,23 @@ void identifyCommand(){
                 break;
             //enable reciever
                 case 23:
-                  breakChar='a';
                   while(!Serial.available()){
                     delay(250);
                     if (IrReceiver.decode()) {
                       if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
-                        Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
-                        // We have an unknown protocol here, print extended info
-                        IrReceiver.printIRResultRawFormatted(&Serial, true);
+                        if(!strcmp(inCom.commandArray[2],"all")){
+                          Serial.println(F("Received noise or an unknown (or not yet enabled) protocol"));
+                          // We have an unknown protocol here, print extended info
+                          IrReceiver.printIRResultRawFormatted(&Serial, true);
+                          Serial.println();
+                        }
                         IrReceiver.resume(); // Do it here, to preserve raw data for printing with printIRResultRawFormatted()
                       } else {
                         IrReceiver.resume(); // Early enable receiving of the next IR frame
                         IrReceiver.printIRResultShort(&Serial);
                         IrReceiver.printIRSendUsage(&Serial);
+                        Serial.println();
                       }
-                      Serial.println();
                     }
                   }
                 break;
