@@ -2,6 +2,11 @@
 #include <serialCommand.h>
 #include <TFT_eSPI.h>
 #include "SPI.h"
+#include <BleKeyboard.h>
+#include <BleMouse.h>
+#include "nvs_flash.h"
+
+
 #define debug inCom.debug
 void refreshTFT();
 void identifyCommand();
@@ -26,6 +31,7 @@ bool isValidHex(const char* str);
 TFT_eSPI tft = TFT_eSPI();
 TFT_eSprite img = TFT_eSprite(&tft);
 
+
 serialCommand inCom;
 //init misc var
   char breakChar='a';
@@ -39,7 +45,8 @@ serialCommand inCom;
       "/help",
       "/debug",
       "/add",
-      "/ir"
+      "/ir",
+      "/ble"
 
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
@@ -80,8 +87,12 @@ void setup() {
     tft.fillScreen(TFT_BLACK);
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
+  //init IR
     IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
+  //init BLE
+    Keyboard.begin();
+    Mouse.begin();
 }
 
 
@@ -152,7 +163,8 @@ void identifyCommand(){
         }
         break;
       //IR
-        case 3:  
+        case 3:
+          {
           int index=inCom.multiComp(inCom.commandArray[1],IRprotocolIndex)+1;
           if(index%2==0){index--;}
           if(debug){Serial.print("index:");Serial.println(index);}
@@ -248,11 +260,26 @@ void identifyCommand(){
               Serial.println(strtol(inCom.commandArray[3],NULL,16),HEX);
 
           }
+          }
         break;
         
+      //ble
+        case 4:
+          if(bleDevice.isConnected()){
+            Keyboard.print(inCom.commandArray[1]);//Serial.println(inCom.commandArray[1]);
+                /*Keyboard.press(KEY_LEFT_CTRL);
+                Keyboard.press(KEY_LEFT_ALT);
+                Keyboard.press(KEY_DELETE);
+                delay(100);
+                Keyboard.releaseAll();
+                */
+          }else{
+            Serial.println("ble not connected");
+          }
+        break;
 
+    }  
 
-    }
   
 }
 
