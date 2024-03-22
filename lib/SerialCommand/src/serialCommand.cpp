@@ -1,6 +1,8 @@
 #include "Arduino.h"
 #include "serialCommand.h"
+#include "BluetoothSerial.h"
 #include <vector>
+
 serialCommand::serialCommand()
 {
 commandString.reserve(200);
@@ -29,6 +31,29 @@ bool serialCommand::check() {
             Serial.write(8);
             Serial.print(' ');
             Serial.write(8);
+            commandString.remove(commandString.length()-1);
+        }
+
+        
+    }
+    while (SerialBT.available()) {
+        // get the new byte:
+            inChar = (char)SerialBT.read();
+  
+        if(inChar=='\r'||inChar=='\n'){
+            SerialBT.println("");
+            return true;
+            commandString.trim();
+        }
+        //backspace charactor is 127
+        if(inChar!=127){
+            SerialBT.print(inChar);
+            // add it to the commandString:
+            commandString += inChar;
+        }else{
+            SerialBT.write(8);
+            SerialBT.print(' ');
+            SerialBT.write(8);
             commandString.remove(commandString.length()-1);
         }
 

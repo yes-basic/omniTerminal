@@ -82,6 +82,7 @@ void setup() {
     img.fillSprite(TFT_BLACK);
     IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
+    inCom.SerialBT.begin("ESP32test");
 }
 
 
