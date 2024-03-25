@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include "serialCommand.h"
 #include "BluetoothSerial.h"
-#include <vector>
+
 
 serialCommand::serialCommand()
 {
@@ -157,3 +157,15 @@ bool serialCommand::isValidHex(const char* str) {
 
   return true;
 }
+//serial replacements
+  bool serialCommand::available(){if(Serial.available()||SerialBT.available()){return true;}else{return false;}}
+
+  void serialCommand::println() {Serial.println();SerialBT.println();}
+  void serialCommand::print(char v[]) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(char v[]) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(long v) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(long v) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(const char v[]) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(const char v[]) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(String v) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(String v) {Serial.println(v);SerialBT.println(v);}

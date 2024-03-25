@@ -4,7 +4,7 @@
 
 #include "Arduino.h"
 #include "BluetoothSerial.h"
-#include <vector>
+
 class serialCommand
 {
   public:
@@ -21,6 +21,14 @@ class serialCommand
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
     BluetoothSerial SerialBT;
+    //serial replacements
+      //printing overloads
+        void print();void println();
+        void print(char v[]);void println(char v[]);
+        void print(const char v[]);void println(const char v[]);
+        void print(long v);void println(long v);
+        void print(String v);void println(String v);
+      bool available();
   private:
     char inChar;
     
