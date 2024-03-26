@@ -88,6 +88,7 @@ void setup() {
     img.fillSprite(TFT_BLACK);
     IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
+    inCom.SerialBT.begin("ESP32");
 }
 
 
@@ -269,8 +270,11 @@ void identifyCommand(){
               case 0:{
                 if(!strcmp(inCom.commandArray[2],"")){
                   inCom.SerialBT.begin("ESP32");
+                  inCom.println("started bluetooth as: ESP32");
                 }else{
                   inCom.SerialBT.begin(inCom.commandArray[2]);
+                  inCom.print("started bluetooth as: ");
+                  inCom.println(inCom.commandArray[2]);
                 }
               break;}
             //end
