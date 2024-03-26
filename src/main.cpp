@@ -40,8 +40,8 @@ serialCommand inCom;
       "/help",
       "/debug",
       "/add",
-      "/ir"
-
+      "/ir",
+      "/bt"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -72,6 +72,11 @@ serialCommand inCom;
       "rec"
 
     };
+  //bluetooth
+    char bluetoothIndex[50][20]={
+      "begin",
+      "end"
+    };
 void setup() {
   //init serial
     Serial.begin(115200);
@@ -83,7 +88,6 @@ void setup() {
     img.fillSprite(TFT_BLACK);
     IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
-    inCom.SerialBT.begin("ESP32test");
 }
 
 
@@ -115,11 +119,11 @@ void identifyCommand(){
   //do the command
     switch(commandInt){
       //not recognized
-        case -1:
+        case -1:{
           inCom.println("not recognized command");
-        break;
+        break;}
       //help
-        case 0:
+        case 0:{
         inCom.println("commands:");
         for(int i=0;i<commandIndexWords;i++){
           if(commandIndex[i][0]!='\0'){
@@ -127,18 +131,18 @@ void identifyCommand(){
           }
         }
         inCom.println("----");
-        break;
+        break;}
       //debug 
-        case 1:
+        case 1:{
         debug=!debug;
         if(debug){
           inCom.println("debug on");
         }else{
           inCom.println("debug off");
         }
-        break;
+        break;}
       //add
-        case 2:
+        case 2:{
         if (inCom.isValidLong(inCom.commandArray[1])&&inCom.isValidLong(inCom.commandArray[2])){
           inCom.print(atol(inCom.commandArray[1]));
           inCom.print("+");
@@ -152,9 +156,9 @@ void identifyCommand(){
             inCom.println(inCom.isValidLong(inCom.commandArray[2]));
           }
         }
-        break;
+        break;}
       //IR
-        case 3:  
+        case 3:{  
           int index=inCom.multiComp(inCom.commandArray[1],IRprotocolIndex)+1;
           if(index%2==0){index--;}
           if(debug){inCom.print("index:");inCom.println(index);}
@@ -250,10 +254,31 @@ void identifyCommand(){
               Serial.println(strtol(inCom.commandArray[3],NULL,16),HEX);
 
           }
-        break;
+
+        break;}
         
 
-
+      //bluetooth
+        case 4:{
+          switch (inCom.multiComp(inCom.commandArray[1],bluetoothIndex)){
+            //command not recognized
+              case -1:{
+                inCom.println("BT command not recognized");
+              break;}
+            //begin
+              case 0:{
+                if(!strcmp(inCom.commandArray[2],"")){
+                  inCom.SerialBT.begin("ESP32");
+                }else{
+                  inCom.SerialBT.begin(inCom.commandArray[2]);
+                }
+              break;}
+            //end
+              case 1:{
+                inCom.SerialBT.end();
+              break;}
+            }
+        break;}
     }
   
 }
