@@ -2,6 +2,7 @@
 #include <serialCommand.h>
 #include <TFT_eSPI.h>
 #include "SPI.h"
+#include "SPIFFS.h"
 #define debug inCom.debug
 void refreshTFT();
 void identifyCommand();
@@ -41,7 +42,8 @@ serialCommand inCom;
       "/debug",
       "/add",
       "/ir",
-      "/bt"
+      "/bt",
+      "/spiffs"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -89,6 +91,10 @@ void setup() {
     IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
     inCom.SerialBT.begin("ESP32");
+    if(!SPIFFS.begin(true)){
+      Serial.println("An Error has occurred while mounting SPIFFS");
+      return;
+    }
 }
 
 
@@ -282,6 +288,22 @@ void identifyCommand(){
                 inCom.SerialBT.end();
               break;}
             }
+        break;}
+      //spiffs
+        case 5:{
+            fs::File file = SPIFFS.open("/text.txt");
+          if(!file){
+            Serial.println("Failed to open file for reading");
+            return;
+          }
+          
+          Serial.println("File Content:");
+          while(file.available()){
+            Serial.write(file.read());
+          }
+          file.close();
+
+
         break;}
     }
   
