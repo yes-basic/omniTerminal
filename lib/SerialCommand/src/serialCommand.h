@@ -1,8 +1,10 @@
 #ifndef serialCommand_h
 #define serialCommand_h
 
+
 #include "Arduino.h"
-#include <vector>
+#include "BluetoothSerial.h"
+
 class serialCommand
 {
   public:
@@ -18,6 +20,18 @@ class serialCommand
     int multiComp(char command[20],char staticArray[50][20]);
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
+    BluetoothSerial SerialBT;
+    //serial replacements
+      //printing overloads
+        void print();void println();
+        void print(int v);void println(int v);
+        void print(char v[]);void println(char v[]);
+        void print(char v);void println(char v);
+        void print(const char v[]);void println(const char v[]);
+        void print(long v);void println(long v);
+        void print(String v);void println(String v);
+        void write(int v);
+      bool available();
   private:
     char inChar;
     

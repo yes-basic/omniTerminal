@@ -1,6 +1,8 @@
 #include "Arduino.h"
 #include "serialCommand.h"
-#include <vector>
+#include "BluetoothSerial.h"
+
+
 serialCommand::serialCommand()
 {
 commandString.reserve(200);
@@ -16,19 +18,42 @@ bool serialCommand::check() {
             inChar = (char)Serial.read();
   
         if(inChar=='\r'||inChar=='\n'){
-            Serial.println("");
+            println("");
             return true;
             commandString.trim();
         }
         //backspace charactor is 127
         if(inChar!=127){
-            Serial.print(inChar);
+            print(inChar);
             // add it to the commandString:
             commandString += inChar;
         }else{
-            Serial.write(8);
-            Serial.print(' ');
-            Serial.write(8);
+            write(8);
+            print(' ');
+            write(8);
+            commandString.remove(commandString.length()-1);
+        }
+
+        
+    }
+    while (SerialBT.available()) {
+        // get the new byte:
+            inChar = (char)SerialBT.read();
+  
+        if(inChar=='\r'||inChar=='\n'){
+            println("");
+            return true;
+            commandString.trim();
+        }
+        //backspace charactor is 127
+        if(inChar!=127){
+            print(inChar);
+            // add it to the commandString:
+            commandString += inChar;
+        }else{
+            write(8);
+            print(' ');
+            write(8);
             commandString.remove(commandString.length()-1);
         }
 
@@ -63,7 +88,7 @@ void serialCommand::parseCommandArray(){
 
         // Break if we have reached the maximum number of words
         if (wordIndex >= sizeof(commandArray)/sizeof(commandArray[0])) {
-            Serial.println("command array overflow");
+            println("command array overflow");
             break;
         }
 
@@ -74,9 +99,9 @@ int serialCommand::multiComp(char command[20],char staticArray[50][20]){
     int staticArrayWords=50;
     for(int i=0;i<staticArrayWords;i++){
         if(!strcmp(command,staticArray[i])){return i;}
-        if(debug){Serial.println(i);}
+        if(debug){println(i);}
     }
-    if(debug){Serial.println("nocmp");}
+    if(debug){println("nocmp");}
     return -1;
 }
 
@@ -114,7 +139,7 @@ bool serialCommand::isValidLong(char* str) {
       return false;
     }
   }
-return true;
+  return true;
 }
 
 bool serialCommand::isValidHex(const char* str) {
@@ -132,3 +157,20 @@ bool serialCommand::isValidHex(const char* str) {
 
   return true;
 }
+//serial replacements
+  bool serialCommand::available(){if(Serial.available()||SerialBT.available()){return true;}else{return false;}}
+
+  void serialCommand::println() {Serial.println();SerialBT.println();}
+  void serialCommand::print(char v[]) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(char v[]) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(char v) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(char v) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(long v) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(long v) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(int v) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(int v) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(const char v[]) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(const char v[]) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::print(String v) {Serial.print(v);SerialBT.print(v);}
+  void serialCommand::println(String v) {Serial.println(v);SerialBT.println(v);}
+  void serialCommand::write(int v){Serial.write(v);SerialBT.write(v);}
