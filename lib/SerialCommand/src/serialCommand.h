@@ -24,10 +24,13 @@ class serialCommand
     //serial replacements
       //printing overloads
         void print();void println();
+        void print(int v);void println(int v);
         void print(char v[]);void println(char v[]);
+        void print(char v);void println(char v);
         void print(const char v[]);void println(const char v[]);
         void print(long v);void println(long v);
         void print(String v);void println(String v);
+        void write(int v);
       bool available();
   private:
     char inChar;
