@@ -4,6 +4,7 @@
 
 #include "Arduino.h"
 #include "BluetoothSerial.h"
+#include "SPIFFS.h"
 
 class serialCommand
 {
@@ -13,7 +14,7 @@ class serialCommand
     bool check();
     String getCommand();
     void flush();
-    void parseCommandArray();
+    void parseCommandArray(String inputCommandString);
     char commandArray[20][20];
     String commandString;
     int wordsInCommand;
