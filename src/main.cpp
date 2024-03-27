@@ -102,7 +102,7 @@ void loop() {
   //check command
     if(inCom.check()){
       if(debug){inCom.println(inCom.commandString);}
-      inCom.parseCommandArray();
+      inCom.parseCommandArray(inCom.commandString);
       if(debug){
         for (int i = 0; i < inCom.wordsInCommand; i++) {
           inCom.print("Word ");
@@ -291,17 +291,14 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //spiffs
         case 5:{
-            fs::File file = SPIFFS.open("/text.txt");
+            fs::File file = SPIFFS.open(commandArray[1]);
           if(!file){
             Serial.println("Failed to open file for reading");
             return;
           }
-          
-          Serial.println("File Content:");
           while(file.available()){
-            Serial.write(file.read());
+            inCom.println(file.readStringUntil('\n'));
           }
-          file.close();
 
 
         break;}
