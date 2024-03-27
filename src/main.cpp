@@ -35,6 +35,7 @@ serialCommand inCom;
   int wordReturn=1;
   char wordBuffer[30];
   int commandInt;
+  fs::File file;
 //init command array
   //main array  
     char commandIndex[50][20]={
@@ -78,6 +79,11 @@ serialCommand inCom;
     char bluetoothIndex[50][20]={
       "begin",
       "end"
+    };
+  //spiffs
+    char spiffsIndex[50][20]={
+      "open",
+      "read"
     };
 void setup() {
   //init serial
@@ -291,16 +297,35 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //spiffs
         case 5:{
-            fs::File file = SPIFFS.open(commandArray[1]);
+          switch (inCom.multiComp(commandArray[1],spiffsIndex))
+          {
+          case -1:{
+            inCom.println("spiffs command not found");
+          break;}
+
+          case 0:{
+          file = SPIFFS.open(commandArray[2]);
           if(!file){
-            Serial.println("Failed to open file for reading");
+            inCom.println("Failed to open file for reading");
             return;
           }
-          while(file.available()){
-            inCom.println(file.readStringUntil('\n'));
+          break;}
+
+          case 1:{
+            if(file){
+              while(file.available()){
+                inCom.println(file.readStringUntil('\n'));
+              }
+              file.seek(0);
+            }else{
+              inCom.println("file not found");
+            }
+          break;}
+
+          default:
+            break;
           }
-
-
+          
         break;}
     }
   
