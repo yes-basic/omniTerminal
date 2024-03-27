@@ -5,7 +5,7 @@
 #include "SPIFFS.h"
 #define debug inCom.debug
 void refreshTFT();
-void identifyCommand();
+void identifyCommand(char commandArray[50][20]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
 
@@ -113,15 +113,15 @@ void loop() {
           inCom.println("\"");
         }
       }
-      identifyCommand();
+      identifyCommand(inCom.commandArray);
       inCom.flush();
     }
   refreshTFT();
 }
 
-void identifyCommand(){
+void identifyCommand(char commandArray[50][20]){
   //find the command
-    commandInt=inCom.multiComp(inCom.commandArray[0],commandIndex);
+    commandInt=inCom.multiComp(commandArray[0],commandIndex);
     if(debug){inCom.println(commandInt);}
   //do the command
     switch(commandInt){
@@ -150,23 +150,23 @@ void identifyCommand(){
         break;}
       //add
         case 2:{
-        if (inCom.isValidLong(inCom.commandArray[1])&&inCom.isValidLong(inCom.commandArray[2])){
-          inCom.print(atol(inCom.commandArray[1]));
+        if (inCom.isValidLong(commandArray[1])&&inCom.isValidLong(commandArray[2])){
+          inCom.print(atol(commandArray[1]));
           inCom.print("+");
-          inCom.print(atol(inCom.commandArray[2]));
+          inCom.print(atol(commandArray[2]));
           inCom.print("=");
-          inCom.println(atol(inCom.commandArray[1])+atol(inCom.commandArray[2]));
+          inCom.println(atol(commandArray[1])+atol(commandArray[2]));
         }else{
           inCom.println("not valid numbers");
           if(debug){
-            inCom.print(inCom.isValidLong(inCom.commandArray[1]));
-            inCom.println(inCom.isValidLong(inCom.commandArray[2]));
+            inCom.print(inCom.isValidLong(commandArray[1]));
+            inCom.println(inCom.isValidLong(commandArray[2]));
           }
         }
         break;}
       //IR
         case 3:{  
-          int index=inCom.multiComp(inCom.commandArray[1],IRprotocolIndex)+1;
+          int index=inCom.multiComp(commandArray[1],IRprotocolIndex)+1;
           if(index%2==0){index--;}
           if(debug){inCom.print("index:");inCom.println(index);}
           switch (index){
@@ -176,56 +176,56 @@ void identifyCommand(){
                 break;
             //main protocols
                 case 1:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendNEC(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendNEC(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 3:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendSony(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendSony(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 5:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendRC5(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendRC5(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 7:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendRC6(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendRC6(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 9:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendSharp(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendSharp(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 11:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendJVC(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendJVC(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 13:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendSamsung(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendSamsung(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 15:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendLG(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendLG(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 17:
                 inCom.println("protocol is WIP");
                 break;
                 case 19:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendPanasonic(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendPanasonic(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
                 case 21:
-                  if (inCom.isValidHex(inCom.commandArray[2])&&inCom.isValidHex(inCom.commandArray[3])){
-                    IrSender.sendDenon(strtol(inCom.commandArray[2],NULL,16),strtol(inCom.commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
+                    IrSender.sendDenon(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
                   }
                 break;
             //enable reciever
@@ -234,7 +234,7 @@ void identifyCommand(){
                     delay(250);
                     if (IrReceiver.decode()) {
                       if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
-                        if(!strcmp(inCom.commandArray[2],"all")){
+                        if(!strcmp(commandArray[2],"all")){
                           inCom.println(F("Received noise or an unknown (or not yet enabled) protocol"));
                           // We have an unknown protocol here, print extended info
                           IrReceiver.printIRResultRawFormatted(&Serial, true);
@@ -257,8 +257,8 @@ void identifyCommand(){
           }
 
           if(debug){
-              Serial.println(strtol(inCom.commandArray[2],NULL,16),HEX);
-              Serial.println(strtol(inCom.commandArray[3],NULL,16),HEX);
+              Serial.println(strtol(commandArray[2],NULL,16),HEX);
+              Serial.println(strtol(commandArray[3],NULL,16),HEX);
 
           }
 
@@ -267,20 +267,20 @@ void identifyCommand(){
 
       //bluetooth
         case 4:{
-          switch (inCom.multiComp(inCom.commandArray[1],bluetoothIndex)){
+          switch (inCom.multiComp(commandArray[1],bluetoothIndex)){
             //command not recognized
               case -1:{
                 inCom.println("BT command not recognized");
               break;}
             //begin
               case 0:{
-                if(!strcmp(inCom.commandArray[2],"")){
+                if(!strcmp(commandArray[2],"")){
                   inCom.SerialBT.begin("ESP32");
                   inCom.println("started bluetooth as: ESP32");
                 }else{
-                  inCom.SerialBT.begin(inCom.commandArray[2]);
+                  inCom.SerialBT.begin(commandArray[2]);
                   inCom.print("started bluetooth as: ");
-                  inCom.println(inCom.commandArray[2]);
+                  inCom.println(commandArray[2]);
                 }
               break;}
             //end
