@@ -9,9 +9,7 @@ void identifyCommand(char commandArray[50][20]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
 
-/*
- * This include defines the actual pin number for pins like IR_RECEIVE_PIN, IR_SEND_PIN for many different boards and architectures
- */
+
 //include ir dependancies
   #include "PinDefinitionsAndMore.h"
   #if !defined(RAW_BUFFER_LENGTH)
