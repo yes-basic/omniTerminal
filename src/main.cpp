@@ -113,6 +113,7 @@ void setup() {
           identifyCommand(inCom.commandArray);
           inCom.flush();
         }
+        startupCommands.close();
       }
 }
 
