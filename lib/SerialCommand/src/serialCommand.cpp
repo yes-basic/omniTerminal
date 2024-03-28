@@ -73,6 +73,9 @@ void serialCommand::flush(){
     }
 }
 
+
+
+
 void serialCommand::parseCommandArray(String inputCommandString){
     int wordIndex = 0;
     int wordLength = 0;

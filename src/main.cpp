@@ -94,13 +94,26 @@ void setup() {
     tft.fillScreen(TFT_BLACK);
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
+  //init ir
     IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
-    inCom.SerialBT.begin("ESP32");
+  //spiffs
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
     }
+    //startup commands
+      if(SPIFFS.exists("/startupCommands")){
+        fs::File startupCommands=SPIFFS.open("/startupCommands");
+        while(startupCommands.available()){
+          String startCommand = startupCommands.readStringUntil('\n');
+          startCommand.trim();
+          inCom.println(startCommand);
+          inCom.parseCommandArray(startCommand);
+          identifyCommand(inCom.commandArray);
+          inCom.flush();
+        }
+      }
 }
 
 
