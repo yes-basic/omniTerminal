@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include "serialCommand.h"
 #include "BluetoothSerial.h"
+#include "SPIFFS.h"
 
 
 serialCommand::serialCommand()
@@ -72,11 +73,14 @@ void serialCommand::flush(){
     }
 }
 
-void serialCommand::parseCommandArray(){
+
+
+
+void serialCommand::parseCommandArray(String inputCommandString){
     int wordIndex = 0;
     int wordLength = 0;
-    for (int i = 0; i < commandString.length(); i++) {
-        char c = commandString.charAt(i);
+    for (int i = 0; i < inputCommandString.length(); i++) {
+        char c = inputCommandString.charAt(i);
 
         // If current character is not a space, add it to current word
         if (c != ' ' && c != '\0') {
