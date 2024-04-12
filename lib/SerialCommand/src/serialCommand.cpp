@@ -163,6 +163,15 @@ bool serialCommand::isValidHex(const char* str) {
 
   return true;
 }
+
+void serialCommand::noRec(char usingIndex[20]){
+print("no such command in index: ");
+println(usingIndex);
+}
+
+
+
+
 //serial replacements
   #ifdef USE_BTclassic
     bool serialCommand::available(){if(Serial.available()||SerialBT.available()){return true;}else{return false;}}

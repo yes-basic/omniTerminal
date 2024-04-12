@@ -3,10 +3,13 @@
 #include <TFT_eSPI.h>
 #include "SPI.h"
 #include "SPIFFS.h"
+#include <esp_now.h>
+#include <WiFi.h>
 #define debug inCom.debug
 #define IR_SEND_PIN IR_SEND_PIN_MOD
 
 void refreshTFT(); 
+
 
 void identifyCommand(char commandArray[50][20]);
 String serialcommand(bool flush);
@@ -46,7 +49,8 @@ serialCommand inCom;
       "/add",
       "/ir",
       "/bt",
-      "/spiffs"
+      "/spiffs",
+      "/espnow"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -86,6 +90,14 @@ serialCommand inCom;
     char spiffsIndex[50][20]={
       "open",
       "read"
+    };
+  //espnow
+    char espnowIndex[50][20]={
+      "register",
+      "tgt",
+      "listreg",
+      "send",
+      "receive"
     };
 void setup() {
   //init serial
@@ -151,7 +163,7 @@ void identifyCommand(char commandArray[50][20]){
     switch(commandInt){
       //not recognized
         case -1:{
-          inCom.println("not recognized command");
+          inCom.noRec("commands");
         break;}
       //help
         case 0:{
@@ -196,7 +208,7 @@ void identifyCommand(char commandArray[50][20]){
           switch (index){
             //not listed
                 case-1:
-                inCom.println("invalid protocol");
+                inCom.noRec("IRprotocols");
                 break;
             //main protocols
                 case 1:
@@ -295,7 +307,7 @@ void identifyCommand(char commandArray[50][20]){
             switch (inCom.multiComp(commandArray[1],bluetoothIndex)){
               //command not recognized
                 case -1:{
-                  inCom.println("BT command not recognized");
+                  inCom.noRec("BTclassic");
                 break;}
               //begin
                 case 0:{
@@ -322,7 +334,7 @@ void identifyCommand(char commandArray[50][20]){
           switch (inCom.multiComp(commandArray[1],spiffsIndex))
           {
           case -1:{
-            inCom.println("spiffs command not found");
+            inCom.noRec("spiffs");
           break;}
 
           case 0:{
@@ -349,6 +361,42 @@ void identifyCommand(char commandArray[50][20]){
           }
           
         break;}
+      //espnow
+        case 6:{
+          switch (inCom.multiComp(commandArray[1],espnowIndex))
+          {
+            //not recognized 
+              case -1:{
+                inCom.noRec("espnow");
+              break;}
+            
+            //register
+              case 0:{
+                
+              break;}
+            //tgt
+              case 1:{
+              
+              break;}
+            //listreg
+              case 2:{
+              
+              break;}
+
+            //send
+              case 3:{
+              
+              break;}
+
+            //receive
+              case 4:{
+              
+              break;}
+              
+            
+              }
+        break;}
+
     }
   
 }
@@ -368,6 +416,8 @@ void refreshTFT(){
     }  
   #endif
 }
+
+
 
 
 
