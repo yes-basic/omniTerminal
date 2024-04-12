@@ -4,7 +4,10 @@
 #include "SPI.h"
 #include "SPIFFS.h"
 #define debug inCom.debug
-void refreshTFT();
+#define IR_SEND_PIN IR_SEND_PIN_MOD
+
+void refreshTFT(); 
+
 void identifyCommand(char commandArray[50][20]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
@@ -23,9 +26,10 @@ bool isValidHex(const char* str);
   #endif
   #define MARK_EXCESS_MICROS    20
   #include <IRremote.hpp> // include the library
-TFT_eSPI tft = TFT_eSPI();
-TFT_eSprite img = TFT_eSprite(&tft);
-
+#ifdef USE_TFT_ESPI 
+  TFT_eSPI tft = TFT_eSPI();
+  TFT_eSprite img = TFT_eSprite(&tft);
+#endif
 serialCommand inCom;
 //init misc var
   char breakChar='a';
@@ -86,14 +90,16 @@ serialCommand inCom;
 void setup() {
   //init serial
     Serial.begin(115200);
+  #ifdef USE_TFT_ESPI 
   //init TFT
     tft.init();
     tft.setRotation(3);
     tft.fillScreen(TFT_BLACK);
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
+  #endif
   //init ir
-    IrReceiver.begin(IR_RECEIVE_PIN,ENABLE_LED_FEEDBACK);
+    IrReceiver.begin(IR_RECEIVE_PIN_MOD,false);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
   //spiffs
     if(!SPIFFS.begin(true)){
@@ -285,27 +291,31 @@ void identifyCommand(char commandArray[50][20]){
 
       //bluetooth
         case 4:{
-          switch (inCom.multiComp(commandArray[1],bluetoothIndex)){
-            //command not recognized
-              case -1:{
-                inCom.println("BT command not recognized");
-              break;}
-            //begin
-              case 0:{
-                if(!strcmp(commandArray[2],"")){
-                  inCom.SerialBT.begin("ESP32");
-                  inCom.println("started bluetooth as: ESP32");
-                }else{
-                  inCom.SerialBT.begin(commandArray[2]);
-                  inCom.print("started bluetooth as: ");
-                  inCom.println(commandArray[2]);
-                }
-              break;}
-            //end
-              case 1:{
-                inCom.SerialBT.end();
-              break;}
+          #ifdef USE_BTclassic
+            switch (inCom.multiComp(commandArray[1],bluetoothIndex)){
+              //command not recognized
+                case -1:{
+                  inCom.println("BT command not recognized");
+                break;}
+              //begin
+                case 0:{
+                  if(!strcmp(commandArray[2],"")){
+                    inCom.SerialBT.begin("ESP32");
+                    inCom.println("started bluetooth as: ESP32");
+                  }else{
+                    inCom.SerialBT.begin(commandArray[2]);
+                    inCom.print("started bluetooth as: ");
+                    inCom.println(commandArray[2]);
+                  }
+                break;}
+              //end
+                case 1:{
+                  inCom.SerialBT.end();
+                break;}
             }
+          #else
+          inCom.println("BTclassic disabled in environment");
+          #endif
         break;}
       //spiffs
         case 5:{
@@ -345,6 +355,7 @@ void identifyCommand(char commandArray[50][20]){
 
 
 void refreshTFT(){
+  #ifdef USE_TFT_ESPI 
   //refresh TFT
     if(millis()-millisLastRefresh>50){
       img.fillSprite(TFT_BLACK);
@@ -355,7 +366,7 @@ void refreshTFT(){
 
       img.pushSprite(0, 0);
     }  
-
+  #endif
 }
 
 

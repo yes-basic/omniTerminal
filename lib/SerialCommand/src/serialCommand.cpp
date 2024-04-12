@@ -37,29 +37,31 @@ bool serialCommand::check() {
 
         
     }
-    while (SerialBT.available()) {
-        // get the new byte:
-            inChar = (char)SerialBT.read();
-  
-        if(inChar=='\r'||inChar=='\n'){
-            println("");
-            return true;
-            commandString.trim();
-        }
-        //backspace charactor is 127
-        if(inChar!=127){
-            print(inChar);
-            // add it to the commandString:
-            commandString += inChar;
-        }else{
-            write(8);
-            print(' ');
-            write(8);
-            commandString.remove(commandString.length()-1);
-        }
+    #ifdef USE_BTclassic
+      while (SerialBT.available()) {
+          // get the new byte:
+              inChar = (char)SerialBT.read();
+    
+          if(inChar=='\r'||inChar=='\n'){
+              println("");
+              return true;
+              commandString.trim();
+          }
+          //backspace charactor is 127
+          if(inChar!=127){
+              print(inChar);
+              // add it to the commandString:
+              commandString += inChar;
+          }else{
+              write(8);
+              print(' ');
+              write(8);
+              commandString.remove(commandString.length()-1);
+          }
 
-        
-    }
+          
+      }
+    #endif
     return false;
 }
 
@@ -162,19 +164,39 @@ bool serialCommand::isValidHex(const char* str) {
   return true;
 }
 //serial replacements
-  bool serialCommand::available(){if(Serial.available()||SerialBT.available()){return true;}else{return false;}}
+  #ifdef USE_BTclassic
+    bool serialCommand::available(){if(Serial.available()||SerialBT.available()){return true;}else{return false;}}
 
-  void serialCommand::println() {Serial.println();SerialBT.println();}
-  void serialCommand::print(char v[]) {Serial.print(v);SerialBT.print(v);}
-  void serialCommand::println(char v[]) {Serial.println(v);SerialBT.println(v);}
-  void serialCommand::print(char v) {Serial.print(v);SerialBT.print(v);}
-  void serialCommand::println(char v) {Serial.println(v);SerialBT.println(v);}
-  void serialCommand::print(long v) {Serial.print(v);SerialBT.print(v);}
-  void serialCommand::println(long v) {Serial.println(v);SerialBT.println(v);}
-  void serialCommand::print(int v) {Serial.print(v);SerialBT.print(v);}
-  void serialCommand::println(int v) {Serial.println(v);SerialBT.println(v);}
-  void serialCommand::print(const char v[]) {Serial.print(v);SerialBT.print(v);}
-  void serialCommand::println(const char v[]) {Serial.println(v);SerialBT.println(v);}
-  void serialCommand::print(String v) {Serial.print(v);SerialBT.print(v);}
-  void serialCommand::println(String v) {Serial.println(v);SerialBT.println(v);}
-  void serialCommand::write(int v){Serial.write(v);SerialBT.write(v);}
+    void serialCommand::println() {Serial.println();SerialBT.println();}
+    void serialCommand::print(char v[]) {Serial.print(v);SerialBT.print(v);}
+    void serialCommand::println(char v[]) {Serial.println(v);SerialBT.println(v);}
+    void serialCommand::print(char v) {Serial.print(v);SerialBT.print(v);}
+    void serialCommand::println(char v) {Serial.println(v);SerialBT.println(v);}
+    void serialCommand::print(long v) {Serial.print(v);SerialBT.print(v);}
+    void serialCommand::println(long v) {Serial.println(v);SerialBT.println(v);}
+    void serialCommand::print(int v) {Serial.print(v);SerialBT.print(v);}
+    void serialCommand::println(int v) {Serial.println(v);SerialBT.println(v);}
+    void serialCommand::print(const char v[]) {Serial.print(v);SerialBT.print(v);}
+    void serialCommand::println(const char v[]) {Serial.println(v);SerialBT.println(v);}
+    void serialCommand::print(String v) {Serial.print(v);SerialBT.print(v);}
+    void serialCommand::println(String v) {Serial.println(v);SerialBT.println(v);}
+    void serialCommand::write(int v){Serial.write(v);SerialBT.write(v);}
+  #else
+    bool serialCommand::available(){if(Serial.available()){return true;}else{return false;}}
+
+    void serialCommand::println() {Serial.println();}
+    void serialCommand::print(char v[]) {Serial.print(v);}
+    void serialCommand::println(char v[]) {Serial.println(v);}
+    void serialCommand::print(char v) {Serial.print(v);}
+    void serialCommand::println(char v) {Serial.println(v);}
+    void serialCommand::print(long v) {Serial.print(v);}
+    void serialCommand::println(long v) {Serial.println(v);}
+    void serialCommand::print(int v) {Serial.print(v);}
+    void serialCommand::println(int v) {Serial.println(v);}
+    void serialCommand::print(const char v[]) {Serial.print(v);}
+    void serialCommand::println(const char v[]) {Serial.println(v);}
+    void serialCommand::print(String v) {Serial.print(v);}
+    void serialCommand::println(String v) {Serial.println(v);}
+    void serialCommand::write(int v){Serial.write(v);}
+  #endif
+

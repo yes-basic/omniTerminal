@@ -3,8 +3,11 @@
 
 
 #include "Arduino.h"
-#include "BluetoothSerial.h"
+#ifdef USE_BTclassic
+  #include "BluetoothSerial.h"
+#endif
 #include "SPIFFS.h"
+
 
 class serialCommand
 {
@@ -21,7 +24,9 @@ class serialCommand
     int multiComp(char command[20],char staticArray[50][20]);
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
+    #ifdef USE_BTclassic
     BluetoothSerial SerialBT;
+    #endif
     //serial replacements
       //printing overloads
         void print();void println();
