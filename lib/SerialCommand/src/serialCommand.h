@@ -27,7 +27,7 @@ class serialCommand
     #ifdef USE_BTclassic
     BluetoothSerial SerialBT;
     #endif
-    void noRec(char usingIndex[20]);
+    void noRec(const char usingIndex[20]);
     //serial replacements
       //printing overloads
         void print();void println();

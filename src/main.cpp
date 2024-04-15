@@ -10,11 +10,11 @@
 
 void refreshTFT(); 
 
-
+bool espnowtryinit();
 void identifyCommand(char commandArray[50][20]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
-
+void strToMac(const char* str, uint8_t* mac);
 
 //include ir dependancies
   #include "PinDefinitionsAndMore.h"
@@ -41,6 +41,16 @@ serialCommand inCom;
   char wordBuffer[30];
   int commandInt;
   fs::File file;
+//init espnow var
+  typedef struct struct_message {
+    char command[50][20];
+    int msgID;
+  } struct_message;
+  bool espnowInit=false;
+  const int peerNumber=10;
+  uint8_t peerAddress[peerNumber][6];
+  esp_now_peer_info_t peerInfoArray[peerNumber];
+  int espnowTGT=0;
 //init command array
   //main array  
     char commandIndex[50][20]={
@@ -97,7 +107,8 @@ serialCommand inCom;
       "tgt",
       "listreg",
       "send",
-      "receive"
+      "receive",
+      "init"
     };
 void setup() {
   //init serial
@@ -131,6 +142,7 @@ void setup() {
         }
         startupCommands.close();
       }
+
 }
 
 
@@ -372,27 +384,57 @@ void identifyCommand(char commandArray[50][20]){
             
             //register
               case 0:{
-                
+                if(espnowtryinit()){
+                  if(inCom.isValidLong(commandArray[2])&&(atol(commandArray[2])%1)==0&& !(atol(commandArray[2])>peerNumber)){
+            
+                    int peerArrayTGT=atol(commandArray[2]);
+                    uint8_t address[6];
+                    strToMac(commandArray[3],address);
+
+                    // Populate the peerInfo structure
+                      memcpy(peerInfoArray[peerArrayTGT].peer_addr, peerAddress, 6); // Copy MAC address
+                      peerInfoArray[peerArrayTGT].channel = 0;  // Set the channel
+                      peerInfoArray[peerArrayTGT].encrypt = false;  // Set encryption (true or false)
+
+                    if (esp_now_add_peer(&peerInfoArray[peerArrayTGT]) != ESP_OK) {
+                      inCom.println("Failed to add peer");
+                      
+                    } else {
+                      inCom.println("Peer added successfully");
+                    }
+                  }
+                }
               break;}
             //tgt
               case 1:{
-              
+                if(espnowtryinit()){
+                  
+                }
               break;}
             //listreg
               case 2:{
-              
+                if(espnowtryinit()){
+                  
+                }
               break;}
 
             //send
               case 3:{
-              
+                if(espnowtryinit()){
+                  
+                }
               break;}
 
             //receive
               case 4:{
-              
+                if(espnowtryinit()){
+
+                }
               break;}
-              
+            //init
+              case 5:{
+                espnowtryinit();
+              break;}
             
               }
         break;}
@@ -417,6 +459,36 @@ void refreshTFT(){
   #endif
 }
 
+bool espnowtryinit(){
+  if(!espnowInit){
+    WiFi.mode(WIFI_STA);
+    if (esp_now_init() != ESP_OK) {
+      inCom.println("Error initializing ESP-NOW");
+      return false;
+    }else{
+      espnowInit=true;
+      inCom.println("--initialized ESP-NOW--");
+      return true;
+    }
+  }else{
+    return true;
+  }
+}
+
+void strToMac(const char* str, uint8_t* mac) {
+  for (int i = 0; i < 6; i++) {
+    sscanf(str + 3 * i, "%2hhx", &mac[i]);
+  }
+}
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  if(status == ESP_NOW_SEND_SUCCESS){
+    inCom.print("Packet successfully sent to: ");
+    inCom.print(espnowTGT);
+  }
+
+  Serial.print("\r\nLast Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+}
 
 
 
