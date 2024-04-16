@@ -15,7 +15,8 @@ void identifyCommand(char commandArray[50][20]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
 void strToMac(const char* str, uint8_t* mac);
-
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
+void printMacOf(int index);
 //include ir dependancies
   #include "PinDefinitionsAndMore.h"
   #if !defined(RAW_BUFFER_LENGTH)
@@ -46,6 +47,7 @@ serialCommand inCom;
     char command[50][20];
     int msgID;
   } struct_message;
+  struct_message espnowMessage;
   bool espnowInit=false;
   const int peerNumber=10;
   uint8_t peerAddress[peerNumber][6];
@@ -384,15 +386,17 @@ void identifyCommand(char commandArray[50][20]){
             
             //register
               case 0:{
+                // test address:    12:34:56:78:9A:BC
                 if(espnowtryinit()){
                   if(inCom.isValidLong(commandArray[2])&&(atol(commandArray[2])%1)==0&& !(atol(commandArray[2])>peerNumber)){
-            
+                    
                     int peerArrayTGT=atol(commandArray[2]);
                     uint8_t address[6];
                     strToMac(commandArray[3],address);
+                    //uint8_t mac[] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC};
 
                     // Populate the peerInfo structure
-                      memcpy(peerInfoArray[peerArrayTGT].peer_addr, peerAddress, 6); // Copy MAC address
+                      memcpy(peerInfoArray[peerArrayTGT].peer_addr, address, 6); // Copy MAC address
                       peerInfoArray[peerArrayTGT].channel = 0;  // Set the channel
                       peerInfoArray[peerArrayTGT].encrypt = false;  // Set encryption (true or false)
 
@@ -402,13 +406,25 @@ void identifyCommand(char commandArray[50][20]){
                     } else {
                       inCom.println("Peer added successfully");
                     }
+                    printMacOf(peerArrayTGT);
+
+                  }else{
+                    inCom.noRec("register");
                   }
                 }
               break;}
             //tgt
               case 1:{
                 if(espnowtryinit()){
-                  
+                  if(inCom.isValidLong(commandArray[2])&&(atol(commandArray[2])%1)==0&& !(atol(commandArray[2])>peerNumber)){
+                  espnowTGT=atoi(commandArray[2]);
+                  inCom.print("Target set to:  (");
+                  inCom.print(espnowTGT);
+                  inCom.print(")  ");
+                  printMacOf(espnowTGT);
+                  }else{
+                    inCom.noRec("TGT");
+                  }
                 }
               break;}
             //listreg
@@ -468,6 +484,7 @@ bool espnowtryinit(){
     }else{
       espnowInit=true;
       inCom.println("--initialized ESP-NOW--");
+      esp_now_register_send_cb(OnDataSent);
       return true;
     }
   }else{
@@ -476,18 +493,35 @@ bool espnowtryinit(){
 }
 
 void strToMac(const char* str, uint8_t* mac) {
-  for (int i = 0; i < 6; i++) {
-    sscanf(str + 3 * i, "%2hhx", &mac[i]);
-  }
+    sscanf(str, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+         &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
 }
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   if(status == ESP_NOW_SEND_SUCCESS){
-    inCom.print("Packet successfully sent to: ");
+    inCom.print("Packet successfully sent to: (");
     inCom.print(espnowTGT);
+    inCom.print(")  ");
+    char macString[20];
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", peerInfoArray[espnowTGT].peer_addr[0], peerInfoArray[espnowTGT].peer_addr[1], peerInfoArray[espnowTGT].peer_addr[2], peerInfoArray[espnowTGT].peer_addr[3], peerInfoArray[espnowTGT].peer_addr[4], peerInfoArray[espnowTGT].peer_addr[5]);
+    inCom.println(macString);
+  }else{
+    inCom.print("Packet Failed to send to: (");
+    inCom.print(espnowTGT);
+    inCom.print(")  ");
+    char macString[20];
+    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", peerInfoArray[espnowTGT].peer_addr[0], peerInfoArray[espnowTGT].peer_addr[1], peerInfoArray[espnowTGT].peer_addr[2], peerInfoArray[espnowTGT].peer_addr[3], peerInfoArray[espnowTGT].peer_addr[4], peerInfoArray[espnowTGT].peer_addr[5]);
+    inCom.println(macString);
   }
 
-  Serial.print("\r\nLast Packet Send Status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+
+}
+
+void printMacOf(int index){
+  char macString[20];
+  for (int i = 0; i < 6; i++) {
+    sprintf(macString + 3 * i, "%02X:", peerInfoArray[index].peer_addr[i]);
+  }
+  inCom.println(macString);
 }
 
 
