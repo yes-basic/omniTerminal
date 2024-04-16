@@ -407,6 +407,7 @@ void identifyCommand(char commandArray[50][20]){
                       inCom.println("Peer added successfully");
                     }
                     printMacOf(peerArrayTGT);
+                    inCom.println();
 
                   }else{
                     inCom.noRec("register");
@@ -422,6 +423,7 @@ void identifyCommand(char commandArray[50][20]){
                   inCom.print(espnowTGT);
                   inCom.print(")  ");
                   printMacOf(espnowTGT);
+                  inCom.println();
                   }else{
                     inCom.noRec("TGT");
                   }
@@ -430,7 +432,13 @@ void identifyCommand(char commandArray[50][20]){
             //listreg
               case 2:{
                 if(espnowtryinit()){
-                  
+                  for(int i=0;i<peerNumber;i++){
+                    inCom.print("(");
+                    inCom.print(i);
+                    inCom.print(")  ");
+                    printMacOf(i); 
+                    inCom.println();
+                  }
                 }
               break;}
 
@@ -521,7 +529,7 @@ void printMacOf(int index){
   for (int i = 0; i < 6; i++) {
     sprintf(macString + 3 * i, "%02X:", peerInfoArray[index].peer_addr[i]);
   }
-  inCom.println(macString);
+  inCom.print(macString);
 }
 
 
