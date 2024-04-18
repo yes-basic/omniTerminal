@@ -44,7 +44,7 @@ serialCommand inCom;
   fs::File file;
 //init espnow var
   typedef struct struct_message {
-    char command[50][20];
+    char command[200];
     int msgID;
   } struct_message;
   struct_message espnowMessage;
@@ -445,7 +445,23 @@ void identifyCommand(char commandArray[50][20]){
             //send
               case 3:{
                 if(espnowtryinit()){
+                  /*
+                  for(int i=2;i<inCom;i++){
+                    
+                    strcat(espnowMessage.command,commandArray[i+2]);
+                    if(strcmp(commandArray[i+3],"")&&i!=9){strcat(espnowMessage.command," ");}
+                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(commandArray[i+2]);}
+                  }
+                  if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
+                  */
                   
+                  
+                  strcpy(espnowMessage.command,"hello hello hello");
+                  espnowMessage.msgID=1;
+                  char testmsg[200]="hello";
+                  uint8_t mac[6] = {0x94, 0xB5, 0x55, 0xC7, 0x01, 0x5C};
+                  esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                  if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
                 }
               break;}
 
@@ -509,16 +525,14 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
     inCom.print("Packet successfully sent to: (");
     inCom.print(espnowTGT);
     inCom.print(")  ");
-    char macString[20];
-    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", peerInfoArray[espnowTGT].peer_addr[0], peerInfoArray[espnowTGT].peer_addr[1], peerInfoArray[espnowTGT].peer_addr[2], peerInfoArray[espnowTGT].peer_addr[3], peerInfoArray[espnowTGT].peer_addr[4], peerInfoArray[espnowTGT].peer_addr[5]);
-    inCom.println(macString);
+    printMacOf(espnowTGT);
+    inCom.println();
   }else{
     inCom.print("Packet Failed to send to: (");
     inCom.print(espnowTGT);
     inCom.print(")  ");
-    char macString[20];
-    sprintf(macString, "%02X:%02X:%02X:%02X:%02X:%02X", peerInfoArray[espnowTGT].peer_addr[0], peerInfoArray[espnowTGT].peer_addr[1], peerInfoArray[espnowTGT].peer_addr[2], peerInfoArray[espnowTGT].peer_addr[3], peerInfoArray[espnowTGT].peer_addr[4], peerInfoArray[espnowTGT].peer_addr[5]);
-    inCom.println(macString);
+    printMacOf(espnowTGT);
+    inCom.println();
   }
 
 
@@ -531,6 +545,7 @@ void printMacOf(int index){
   }
   inCom.print(macString);
 }
+
 
 
 
