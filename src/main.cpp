@@ -445,21 +445,21 @@ void identifyCommand(char commandArray[50][20]){
             //send
               case 3:{
                 if(espnowtryinit()){
-                  /*
-                  for(int i=2;i<inCom;i++){
-                    
-                    strcat(espnowMessage.command,commandArray[i+2]);
-                    if(strcmp(commandArray[i+3],"")&&i!=9){strcat(espnowMessage.command," ");}
+                  strcpy(espnowMessage.command,commandArray[2]);
+                  for(int i=0;i<9;i++){
+                    if(strcmp(commandArray[i+3],"")){
+                      strcat(espnowMessage.command," ");
+                      strcat(espnowMessage.command,commandArray[i+3]);
+                    }
+
                     if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(commandArray[i+2]);}
                   }
                   if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
-                  */
+
                   
                   
-                  strcpy(espnowMessage.command,"hello hello hello");
+                
                   espnowMessage.msgID=1;
-                  char testmsg[200]="hello";
-                  uint8_t mac[6] = {0x94, 0xB5, 0x55, 0xC7, 0x01, 0x5C};
                   esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
                   if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
                 }
