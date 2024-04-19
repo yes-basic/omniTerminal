@@ -24,10 +24,16 @@ class serialCommand
     int multiComp(char command[20],char staticArray[50][20]);
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
+    char addonArray[20][20]={"/add"};
+    char addonString[400];
+    char bufString[400];
+    void compileCharArray(char array[][20],int rows,char string[]);
     #ifdef USE_BTclassic
     BluetoothSerial SerialBT;
     #endif
     void noRec(const char usingIndex[20]);
+    void clearCMD();
+    void reprintCMD();
     //serial replacements
       //printing overloads
         void print();void println();

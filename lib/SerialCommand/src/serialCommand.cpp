@@ -81,6 +81,12 @@ void serialCommand::flush(){
 void serialCommand::parseCommandArray(String inputCommandString){
     int wordIndex = 0;
     int wordLength = 0;
+    while(strcmp(addonArray[wordIndex],"")){
+      strcpy(commandArray[wordIndex],addonArray[wordIndex]);
+      wordIndex++;
+    }
+
+
     for (int i = 0; i < inputCommandString.length(); i++) {
         char c = inputCommandString.charAt(i);
 
@@ -169,6 +175,34 @@ print("no such command in index: ");
 println(usingIndex);
 }
 
+void serialCommand::clearCMD(){
+  Serial.print("\033[2K"); // Clear the line
+  Serial.print("\r"); 
+  #ifdef USE_BTclassic
+  SerialBT.print("\033[2K"); // Clear the line
+  SerialBT.print("\r"); 
+  #endif
+}
+void serialCommand::reprintCMD(){
+  compileCharArray(addonArray,20,addonString);
+  Serial.print(addonString);
+  Serial.print("$~");
+  Serial.println(commandString);
+  #ifdef USE_BTclassic
+  Serial.print(addonString);
+  Serial.print("$~");
+  Serial.println(commandString);
+  #endif
+}
+void serialCommand::compileCharArray(char array[][20],int rows,char string[]){
+  strcpy(string,array[0]);
+  for(int i=0;i<rows;i++){
+    if(strcmp(array[i+1],"")){
+      strcat(string," ");
+      strcat(string,array[i+1]);
+    } 
+  }
+}
 
 
 

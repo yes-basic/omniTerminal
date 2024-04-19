@@ -149,7 +149,6 @@ void setup() {
         }
         startupCommands.close();
       }
-
 }
 
 
@@ -168,6 +167,7 @@ void loop() {
           inCom.println("\"");
         }
       }
+
       identifyCommand(inCom.commandArray);
       inCom.flush();
     }
