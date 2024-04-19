@@ -1,2 +1,2 @@
-/espnow register 1 94:B5:55:C7:01:5C
-/espnow tgt 1
+/espnow register 0 94:B5:55:C7:01:5C
+/espnow register 1 74:4D:BD:81:9C:78

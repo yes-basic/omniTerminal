@@ -16,6 +16,7 @@ String serialcommand(bool flush);
 bool isValidHex(const char* str);
 void strToMac(const char* str, uint8_t* mac);
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
+void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 void printMac(uint8_t mac[6]);
 //include ir dependancies
   #include "PinDefinitionsAndMore.h"
@@ -54,6 +55,8 @@ serialCommand inCom;
   uint8_t peerAddress[peerNumber][6];
   esp_now_peer_info_t peerInfoArray[peerNumber];
   int espnowTGT=0;
+  bool espnowAutorun=false;
+  int espnowReceiveSet=0;
 //init command array
   //main array  
     char commandIndex[50][20]={
@@ -111,7 +114,8 @@ serialCommand inCom;
       "listreg",
       "send",
       "receive",
-      "init"
+      "init",
+      "mac"
     };
 void setup() {
   //init serial
@@ -469,8 +473,22 @@ void identifyCommand(char commandArray[50][20]){
             //receive
               case 4:{
                 if(espnowtryinit()){
-                  
-
+                  if(strcmp(commandArray[2],"none")==0){
+                    espnowReceiveSet=0;
+                    esp_now_unregister_recv_cb();
+                    inCom.println("receive set to none");
+                    
+                  }
+                  if(strcmp(commandArray[2],"silent")==0){
+                    espnowReceiveSet=1;
+                    esp_now_register_recv_cb(OnDataRecv);
+                    inCom.println("receive set to silent");
+                  }
+                  if(strcmp(commandArray[2],"full")==0){
+                    espnowReceiveSet=2;
+                    esp_now_register_recv_cb(OnDataRecv);
+                    inCom.println("receive set to full");
+                  }
                 }
               break;}
             //init
@@ -478,7 +496,13 @@ void identifyCommand(char commandArray[50][20]){
                 espnowtryinit();
               break;}
             
-              }
+            //mac
+              case 6:{
+                if(espnowtryinit()){
+                  inCom.println(WiFi.macAddress());
+                }
+              break;}
+          }
         break;}
 
     }
@@ -511,6 +535,8 @@ bool espnowtryinit(){
       espnowInit=true;
       inCom.println("--initialized ESP-NOW--");
       esp_now_register_send_cb(OnDataSent);
+      
+
       return true;
     }
   }else{
@@ -541,13 +567,21 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 }
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&espnowRecieved, incomingData, sizeof(espnowRecieved));
-  inCom.print("Bytes received: ");
-  inCom.println(len);
-  inCom.print("command: ");
-  inCom.println(espnowRecieved.command);
-  inCom.print("ID: ");
-  inCom.println(espnowRecieved.msgID);
-  inCom.println();
+  if(espnowReceiveSet==2){
+    inCom.print("~espnow {");
+    printMac((uint8_t *) mac);
+    if(debug){
+      inCom.print(" Bytes:");
+      inCom.print(len);
+    }
+    inCom.print(" ID:");
+    inCom.print(espnowRecieved.msgID);
+
+    inCom.print("}");
+    inCom.print(">>>> ");
+    inCom.println(espnowRecieved.command);
+    inCom.print(inCom.commandString);
+  }
 }
 
 void printMac(uint8_t mac[6]){
