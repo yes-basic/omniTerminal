@@ -578,7 +578,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     inCom.print(espnowRecieved.msgID);
 
     inCom.print("}");
-    inCom.print(">>>> ");
+    inCom.print("---- ");
     inCom.println(espnowRecieved.command);
     inCom.print(inCom.commandString);
   }

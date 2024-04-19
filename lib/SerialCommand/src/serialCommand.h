@@ -27,7 +27,7 @@ class serialCommand
     char addonArray[20][20]={"/add"};
     char addonString[400];
     char bufString[400];
-    void compileCharArray(char array[][20],int rows,char string[]);
+    void compileCharArray(char array[][20],int rows,char *string[]);
     #ifdef USE_BTclassic
     BluetoothSerial SerialBT;
     #endif

@@ -15,9 +15,12 @@ bool serialCommand::check() {
     }
 
     while (Serial.available()) {
-        // get the new byte:
-            inChar = (char)Serial.read();
-  
+      // get the new byte:
+        inChar = (char)Serial.read();
+      if(commandString.isEmpty()){
+        clearCMD();
+        reprintCMD();
+      }
         if(inChar=='\r'||inChar=='\n'){
             println("");
             return true;
@@ -29,10 +32,12 @@ bool serialCommand::check() {
             // add it to the commandString:
             commandString += inChar;
         }else{
+          if(!commandString.isEmpty()){
             write(8);
             print(' ');
             write(8);
             commandString.remove(commandString.length()-1);
+          }
         }
 
         
@@ -171,8 +176,8 @@ bool serialCommand::isValidHex(const char* str) {
 }
 
 void serialCommand::noRec(const char usingIndex[20]){
-print("no such command in index: ");
-println(usingIndex);
+  print("no such command in index: ");
+  println(usingIndex);
 }
 
 void serialCommand::clearCMD(){
@@ -184,26 +189,22 @@ void serialCommand::clearCMD(){
   #endif
 }
 void serialCommand::reprintCMD(){
-  compileCharArray(addonArray,20,addonString);
+    strcpy(addonString,addonArray[0]);
+  for(int i=0;i<19;i++){
+    if(strcmp(addonArray[i+1],"")){
+      strcat(addonString," ");
+      strcat(addonString,addonArray[i+1]);
+    } 
+  }
   Serial.print(addonString);
-  Serial.print("$~");
-  Serial.println(commandString);
+  Serial.print(">>");
+  Serial.print(commandString);
   #ifdef USE_BTclassic
   Serial.print(addonString);
   Serial.print("$~");
   Serial.println(commandString);
   #endif
 }
-void serialCommand::compileCharArray(char array[][20],int rows,char string[]){
-  strcpy(string,array[0]);
-  for(int i=0;i<rows;i++){
-    if(strcmp(array[i+1],"")){
-      strcat(string," ");
-      strcat(string,array[i+1]);
-    } 
-  }
-}
-
 
 
 //serial replacements
