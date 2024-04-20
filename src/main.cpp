@@ -65,7 +65,7 @@ serialCommand inCom;
       "/add",
       "/ir",
       "/bt",
-      "/spiffs",
+      "/file",
       "/espnow"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
@@ -102,8 +102,8 @@ serialCommand inCom;
       "begin",
       "end"
     };
-  //spiffs
-    char spiffsIndex[50][20]={
+  //file
+    char fileIndex[50][20]={
       "open",
       "read"
     };
@@ -131,7 +131,7 @@ void setup() {
   //init ir
     IrReceiver.begin(IR_RECEIVE_PIN_MOD,false);
     IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
-  //spiffs
+  //file
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
@@ -185,7 +185,7 @@ void loop() {
 void identifyCommand(char commandArray[50][20]){
   //find the command
     commandInt=inCom.multiComp(commandArray[0],commandIndex);
-    if(debug){inCom.println(commandInt);}
+    
   //do the command
     switch(commandInt){
       //not recognized
@@ -356,32 +356,32 @@ void identifyCommand(char commandArray[50][20]){
           inCom.println("BTclassic disabled in environment");
           #endif
         break;}
-      //spiffs
+      //file
         case 5:{
-          switch (inCom.multiComp(commandArray[1],spiffsIndex))
+          switch (inCom.multiComp(commandArray[1],fileIndex))
           {
           case -1:{
-            inCom.noRec("spiffs");
+            inCom.noRec("file");
           break;}
-
-          case 0:{
-          file = SPIFFS.open(commandArray[2]);
-          if(!file){
-            inCom.println("Failed to open file for reading");
-            return;
-          }
-          break;}
-
-          case 1:{
-            if(file){
-              while(file.available()){
-                inCom.println(file.readStringUntil('\n'));
-              }
-              file.seek(0);
-            }else{
-              inCom.println("file not found");
+          //open
+            case 0:{
+            file = SPIFFS.open(commandArray[2]);
+            if(!file){
+              inCom.println("Failed to open file for reading");
+              return;
             }
-          break;}
+            break;}
+          //read
+            case 1:{
+              if(file){
+                while(file.available()){
+                  inCom.println(file.readStringUntil('\n'));
+                }
+                file.seek(0);
+              }else{
+                inCom.println("file not found");
+              }
+            break;}
 
           default:
             break;

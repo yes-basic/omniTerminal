@@ -114,10 +114,10 @@ void serialCommand::parseCommandArray(String inputCommandString,bool addons){
 int serialCommand::multiComp(char command[20],char staticArray[50][20]){
     int staticArrayWords=50;
     for(int i=0;i<staticArrayWords;i++){
-        if(!strcmp(command,staticArray[i])){return i;}
-        if(debug){println(i);}
+        if(!strcmp(command,staticArray[i])){if(debug){print("--multiComp (");print(command);print(") ");print(i);println("<found");}return i;}
+        if(debug){print("--multiComp (");print(command);print(") ");println(i);}
     }
-    if(debug){println("nocmp");}
+    if(debug){print("--multiComp (");print(command);print(") -----not found----");}
     return -1;
 }
 
