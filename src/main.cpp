@@ -143,7 +143,7 @@ void setup() {
           String startCommand = startupCommands.readStringUntil('\n');
           startCommand.trim();
           inCom.println(startCommand);
-          inCom.parseCommandArray(startCommand);
+          inCom.parseCommandArray(startCommand,true);
           identifyCommand(inCom.commandArray);
           inCom.flush();
         }
@@ -156,7 +156,7 @@ void loop() {
   //check command
     if(inCom.check()){
       if(debug){inCom.println(inCom.commandString);}
-      inCom.parseCommandArray(inCom.commandString);
+
       if(debug){
         for (int i = 0; i < inCom.wordsInCommand; i++) {
           inCom.print("Word ");
@@ -167,8 +167,16 @@ void loop() {
           inCom.println("\"");
         }
       }
-
-      identifyCommand(inCom.commandArray);
+      if(inCom.commandString.charAt(0)=='>'){
+        inCom.commandString.remove(0,1);
+        inCom.parseCommandArray(inCom.commandString,false);
+        for(int i=0;i<=20;i++){
+          strcpy(inCom.addonArray[i],inCom.commandArray[i]);
+        }
+      }else{
+        inCom.parseCommandArray(inCom.commandString,true);
+        identifyCommand(inCom.commandArray);
+      }
       inCom.flush();
     }
   refreshTFT();

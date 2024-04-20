@@ -81,16 +81,15 @@ void serialCommand::flush(){
 }
 
 
-
-
-void serialCommand::parseCommandArray(String inputCommandString){
+void serialCommand::parseCommandArray(String inputCommandString,bool addons){
     int wordIndex = 0;
     int wordLength = 0;
-    while(strcmp(addonArray[wordIndex],"")){
-      strcpy(commandArray[wordIndex],addonArray[wordIndex]);
-      wordIndex++;
+    if(addons){
+      while(strcmp(addonArray[wordIndex],"")){
+        strcpy(commandArray[wordIndex],addonArray[wordIndex]);
+        wordIndex++;
+      }
     }
-
 
     for (int i = 0; i < inputCommandString.length(); i++) {
         char c = inputCommandString.charAt(i);
