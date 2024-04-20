@@ -66,7 +66,8 @@ serialCommand inCom;
       "/ir",
       "/bt",
       "/file",
-      "/espnow"
+      "/espnow",
+      "/run"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -513,6 +514,27 @@ void identifyCommand(char commandArray[50][20]){
           }
         break;}
 
+      //run
+        case 7:{
+            //file
+    if(!SPIFFS.begin(true)){
+      Serial.println("An Error has occurred while mounting SPIFFS");
+      return;
+    }
+    //startup commands
+      if(SPIFFS.exists(commandArray[1])){
+        fs::File runFile=SPIFFS.open(commandArray[1]);
+        while(runFile.available()){
+          String startCommand = runFile.readStringUntil('\n');
+          startCommand.trim();
+          inCom.println(startCommand);
+          inCom.parseCommandArray(startCommand,true);
+          identifyCommand(inCom.commandArray);
+          inCom.flush();
+        }
+        runFile.close();
+      }
+        break;}
     }
   
 }
