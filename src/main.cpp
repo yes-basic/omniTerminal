@@ -146,7 +146,7 @@ void setup() {
           inCom.println(startCommand);
           inCom.parseCommandArray(startCommand,true);
           identifyCommand(inCom.commandArray);
-          inCom.flush();
+          inCom.flush(false);
         }
         startupCommands.close();
       }
@@ -178,7 +178,7 @@ void loop() {
         inCom.parseCommandArray(inCom.commandString,true);
         identifyCommand(inCom.commandArray);
       }
-      inCom.flush();
+      inCom.flush(true);
     }
   refreshTFT();
 }
@@ -470,9 +470,6 @@ void identifyCommand(char commandArray[50][20]){
                   }
                   if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
 
-                  
-                  
-                
                   espnowMessage.msgID=1;
                   esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
                   if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
@@ -511,29 +508,30 @@ void identifyCommand(char commandArray[50][20]){
                   inCom.println(WiFi.macAddress());
                 }
               break;}
+            //set
           }
         break;}
 
       //run
         case 7:{
             //file
-    if(!SPIFFS.begin(true)){
-      Serial.println("An Error has occurred while mounting SPIFFS");
-      return;
-    }
-    //startup commands
-      if(SPIFFS.exists(commandArray[1])){
-        fs::File runFile=SPIFFS.open(commandArray[1]);
-        while(runFile.available()){
-          String startCommand = runFile.readStringUntil('\n');
-          startCommand.trim();
-          inCom.println(startCommand);
-          inCom.parseCommandArray(startCommand,true);
-          identifyCommand(inCom.commandArray);
-          inCom.flush();
-        }
-        runFile.close();
-      }
+              if(!SPIFFS.begin(true)){
+                Serial.println("An Error has occurred while mounting SPIFFS");
+                return;
+              }
+              
+              if(SPIFFS.exists(commandArray[1])){
+                fs::File runFile=SPIFFS.open(commandArray[1]);
+                while(runFile.available()){
+                  String startCommand = runFile.readStringUntil('\n');
+                  startCommand.trim();
+                  inCom.println(startCommand);
+                  inCom.parseCommandArray(startCommand,false);
+                  identifyCommand(inCom.commandArray);
+                  inCom.flush(false);
+                }
+                runFile.close();
+              }
         break;}
     }
   

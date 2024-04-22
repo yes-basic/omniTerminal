@@ -70,9 +70,11 @@ bool serialCommand::check() {
     return false;
 }
 
-void serialCommand::flush(){
-    inChar=0;
-    commandString="";
+void serialCommand::flush(bool flushAll){
+    if(flushAll){
+      inChar=0;
+      commandString="";
+    } 
     for (int i = 0; i <sizeof(commandArray)/sizeof(commandArray[0]); i++) {
         for (int j = 0; j < sizeof(commandArray[0]); j++) {
             commandArray[i][j] = '\0';  // Set each character to null
@@ -242,4 +244,8 @@ void serialCommand::reprintCMD(){
     void serialCommand::println(String v) {Serial.println(v);}
     void serialCommand::write(int v){Serial.write(v);}
   #endif
+
+  void serialCommand::tryEspnowSend(char packet[200]){
+    
+  }
 

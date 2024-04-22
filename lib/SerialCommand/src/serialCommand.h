@@ -13,10 +13,11 @@ class serialCommand
 {
   public:
     serialCommand();
+    void tryEspnowSend(char packet[200]);
     bool debug;
     bool check();
     String getCommand();
-    void flush();
+    void flush(bool flushAll);
     void parseCommandArray(String inputCommandString,bool addons);
     char commandArray[20][20];
     String commandString;
