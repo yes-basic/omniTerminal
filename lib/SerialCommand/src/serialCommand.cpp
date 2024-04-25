@@ -33,9 +33,9 @@ bool serialCommand::check() {
             commandString += inChar;
         }else{
           if(!commandString.isEmpty()){
-            write(8);
+            print('\b');
             print(' ');
-            write(8);
+            print('\b');
             commandString.remove(commandString.length()-1);
           }
         }
@@ -58,9 +58,9 @@ bool serialCommand::check() {
               // add it to the commandString:
               commandString += inChar;
           }else{
-              write(8);
+              print('\b');
               print(' ');
-              write(8);
+              print('\b');
               commandString.remove(commandString.length()-1);
           }
 
@@ -209,43 +209,28 @@ void serialCommand::reprintCMD(){
 
 
 //serial replacements
-  #ifdef USE_BTclassic
-    bool serialCommand::available(){if(Serial.available()||SerialBT.available()){return true;}else{return false;}}
-
-    void serialCommand::println() {Serial.println();SerialBT.println();}
-    void serialCommand::print(char v[]) {Serial.print(v);SerialBT.print(v);}
-    void serialCommand::println(char v[]) {Serial.println(v);SerialBT.println(v);}
-    void serialCommand::print(char v) {Serial.print(v);SerialBT.print(v);}
-    void serialCommand::println(char v) {Serial.println(v);SerialBT.println(v);}
-    void serialCommand::print(long v) {Serial.print(v);SerialBT.print(v);}
-    void serialCommand::println(long v) {Serial.println(v);SerialBT.println(v);}
-    void serialCommand::print(int v) {Serial.print(v);SerialBT.print(v);}
-    void serialCommand::println(int v) {Serial.println(v);SerialBT.println(v);}
-    void serialCommand::print(const char v[]) {Serial.print(v);SerialBT.print(v);}
-    void serialCommand::println(const char v[]) {Serial.println(v);SerialBT.println(v);}
-    void serialCommand::print(String v) {Serial.print(v);SerialBT.print(v);}
-    void serialCommand::println(String v) {Serial.println(v);SerialBT.println(v);}
-    void serialCommand::write(int v){Serial.write(v);SerialBT.write(v);}
-  #else
     bool serialCommand::available(){if(Serial.available()){return true;}else{return false;}}
 
-    void serialCommand::println() {Serial.println();}
-    void serialCommand::print(char v[]) {Serial.print(v);}
-    void serialCommand::println(char v[]) {Serial.println(v);}
-    void serialCommand::print(char v) {Serial.print(v);}
-    void serialCommand::println(char v) {Serial.println(v);}
-    void serialCommand::print(long v) {Serial.print(v);}
-    void serialCommand::println(long v) {Serial.println(v);}
-    void serialCommand::print(int v) {Serial.print(v);}
-    void serialCommand::println(int v) {Serial.println(v);}
-    void serialCommand::print(const char v[]) {Serial.print(v);}
-    void serialCommand::println(const char v[]) {Serial.println(v);}
-    void serialCommand::print(String v) {Serial.print(v);}
-    void serialCommand::println(String v) {Serial.println(v);}
-    void serialCommand::write(int v){Serial.write(v);}
-  #endif
+    void serialCommand::println() {snprintf(bufString,198,"\n");send(bufString);}
+    void serialCommand::print(char v[]) {snprintf(bufString,198,"%s",v);send(bufString);}
+    void serialCommand::println(char v[]) {snprintf(bufString,198,"%s\n",v);send(bufString);}
+    void serialCommand::print(char v) {snprintf(bufString,198,"%c",v);send(bufString);}
+    void serialCommand::println(char v) {snprintf(bufString,198,"%c\n",v);send(bufString);}
+    void serialCommand::print(long v) {snprintf(bufString,198,"%d",v);send(bufString);}
+    void serialCommand::println(long v) {snprintf(bufString,198,"%d\n",v);send(bufString);}
+    void serialCommand::print(int v) {snprintf(bufString,198,"%d",v);send(bufString);}
+    void serialCommand::println(int v) {snprintf(bufString,198,"%d\n",v);send(bufString);}
+    void serialCommand::print(const char v[]) {snprintf(bufString,198,"%s",v);send(bufString);}
+    void serialCommand::println(const char v[]) {snprintf(bufString,198,"%s\n",v);send(bufString);}
+    void serialCommand::print(String v) {v.toCharArray(bufString,198);send(bufString);}
+    void serialCommand::println(String v) {v.toCharArray(bufString,198);snprintf(bufString,198,"%s\n",bufString);send(bufString);}
+
 
   void serialCommand::tryEspnowSend(char packet[200]){
     
+  }
+  void serialCommand::send(char data[200]){
+    Serial.print(data);
+
   }
 

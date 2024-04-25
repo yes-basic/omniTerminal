@@ -33,6 +33,7 @@ class serialCommand
     BluetoothSerial SerialBT;
     #endif
     void noRec(const char usingIndex[20]);
+    void send(char data[200]);
     void clearCMD();
     void reprintCMD();
     //serial replacements
