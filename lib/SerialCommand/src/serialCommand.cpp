@@ -201,9 +201,9 @@ void serialCommand::reprintCMD(){
   Serial.print(">>");
   Serial.print(commandString);
   #ifdef USE_BTclassic
-  Serial.print(addonString);
-  Serial.print("$~");
-  Serial.println(commandString);
+  SerialBT.print(addonString);
+  SerialBT.print(">>");
+  SerialBT.print(commandString);
   #endif
 }
 

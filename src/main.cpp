@@ -67,7 +67,8 @@ serialCommand inCom;
       "/bt",
       "/file",
       "/espnow",
-      "/run"
+      "/run",
+      "/test"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -116,7 +117,8 @@ serialCommand inCom;
       "send",
       "receive",
       "init",
-      "mac"
+      "mac",
+      "cmd"
     };
 void setup() {
   //init serial
@@ -508,7 +510,25 @@ void identifyCommand(char commandArray[50][20]){
                   inCom.println(WiFi.macAddress());
                 }
               break;}
-            //set
+            //cmd
+              case 7:{
+                if(espnowtryinit()){
+                  strcpy(espnowMessage.command,commandArray[2]);
+                  for(int i=0;i<9;i++){
+                    if(strcmp(commandArray[i+3],"")){
+                      strcat(espnowMessage.command," ");
+                      strcat(espnowMessage.command,commandArray[i+3]);
+                    }
+
+                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(commandArray[i+2]);}
+                  }
+                  if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
+
+                  espnowMessage.msgID=2;
+                  esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                  if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                }
+              break;}
           }
         break;}
 
@@ -532,6 +552,11 @@ void identifyCommand(char commandArray[50][20]){
                 }
                 runFile.close();
               }
+        break;}
+      //test
+        case 8:{
+          
+
         break;}
     }
   
@@ -609,6 +634,11 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
     inCom.print("---- ");
     inCom.println(espnowRecieved.command);
     inCom.print(inCom.commandString);
+  }
+  if (espnowRecieved.msgID==2){
+    String receivedCommand = espnowRecieved.command;
+    inCom.parseCommandArray(receivedCommand,true);
+    identifyCommand(inCom.commandArray);
   }
 }
 
