@@ -2,7 +2,8 @@
 #include "serialCommand.h"
 #include "BluetoothSerial.h"
 #include "SPIFFS.h"
-
+#include <esp_now.h>
+#include <WiFi.h>
 
 serialCommand::serialCommand()
 {
@@ -231,6 +232,15 @@ void serialCommand::reprintCMD(){
   }
   void serialCommand::send(char data[200]){
     Serial.print(data);
+    if(sendFunction!= nullptr){
+      sendFunction(data,0);
+    }
+  }
 
+  void serialCommand::registerSendFunction(sendFunctionPtr function){
+    sendFunction=function;
+  }
+  void serialCommand::unregisterSendFunction(){
+    sendFunction=nullptr;
   }
 

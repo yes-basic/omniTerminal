@@ -46,6 +46,10 @@ class serialCommand
         void print(long v);void println(long v);
         void print(String v);void println(String v);
         void write(int v);
+        typedef void (*sendFunctionPtr)(char command[200],int msgID);
+        sendFunctionPtr sendFunction=nullptr;
+        void registerSendFunction(sendFunctionPtr function);
+        void unregisterSendFunction();
         
       bool available();
   private:

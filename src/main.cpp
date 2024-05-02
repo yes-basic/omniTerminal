@@ -18,6 +18,7 @@ void strToMac(const char* str, uint8_t* mac);
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 void printMac(uint8_t mac[6]);
+void mainSendFunction(char command[200],int msgID);
 //include ir dependancies
   #include "PinDefinitionsAndMore.h"
   #if !defined(RAW_BUFFER_LENGTH)
@@ -57,6 +58,9 @@ serialCommand inCom;
   int espnowTGT=0;
   bool espnowAutorun=false;
   int espnowReceiveSet=0;
+  uint8_t lastReceivedMac[6];
+  uint8_t sendBackMac;
+  String receivedCommand="";
 //init command array
   //main array  
     char commandIndex[50][20]={
@@ -118,7 +122,8 @@ serialCommand inCom;
       "receive",
       "init",
       "mac",
-      "cmd"
+      "cmd",
+      "pair"
     };
 void setup() {
   //init serial
@@ -152,6 +157,7 @@ void setup() {
         }
         startupCommands.close();
       }
+  
 }
 
 
@@ -181,6 +187,11 @@ void loop() {
         identifyCommand(inCom.commandArray);
       }
       inCom.flush(true);
+    }else if(strcmp(receivedCommand.c_str(),"")!=0){
+      inCom.parseCommandArray(receivedCommand,true);
+      receivedCommand="";
+      identifyCommand(inCom.commandArray);
+      inCom.flush(false);
     }
   refreshTFT();
 }
@@ -529,6 +540,27 @@ void identifyCommand(char commandArray[50][20]){
                   if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
                 }
               break;}
+            //pair
+              case 8:{
+                if(!strcmp(commandArray[2],"")){
+                  if(espnowtryinit()){
+                    inCom.registerSendFunction(mainSendFunction);
+                    // Populate the peerInfo structure
+                      memcpy(peerInfoArray[9].peer_addr, lastReceivedMac, 6); // Copy MAC address
+                      peerInfoArray[9].channel = 0;  // Set the channel
+                      peerInfoArray[9].encrypt = false;  // Set encryption (true or false)
+
+                    esp_now_add_peer(&peerInfoArray[9]);
+                  inCom.println("paired");
+                  
+                      
+                  }
+                }else if(!strcmp(commandArray[2],"off")){
+                  inCom.unregisterSendFunction();
+                }else {
+                  inCom.noRec("pair");
+                }
+              break;}
           }
         break;}
 
@@ -555,8 +587,8 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //test
         case 8:{
-          
-
+          //mainSendFunction("hello",0);
+          inCom.send("hello");
         break;}
     }
   
@@ -602,43 +634,49 @@ void strToMac(const char* str, uint8_t* mac) {
          &mac[0], &mac[1], &mac[2], &mac[3], &mac[4], &mac[5]);
 }
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  if(status == ESP_NOW_SEND_SUCCESS){
-    inCom.print("Packet successfully sent to: (");
-    inCom.print(espnowTGT);
-    inCom.print(")  ");
-    printMac(peerInfoArray[espnowTGT].peer_addr);
-    inCom.println();
-  }else{
-    inCom.print("Packet Failed to send to: (");
-    inCom.print(espnowTGT);
-    inCom.print(")  ");
-    printMac(peerInfoArray[espnowTGT].peer_addr);
-    inCom.println();
+  if(espnowMessage.msgID!=0){
+    if(status == ESP_NOW_SEND_SUCCESS){
+      inCom.print("Packet successfully sent to: (");
+      inCom.print(espnowTGT);
+      inCom.print(")  ");
+      printMac(peerInfoArray[espnowTGT].peer_addr);
+      inCom.println();
+    }else{
+      inCom.print("Packet Failed to send to: (");
+      inCom.print(espnowTGT);
+      inCom.print(")  ");
+      printMac(peerInfoArray[espnowTGT].peer_addr);
+      inCom.println();
+    }
   }
-
-
 }
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&espnowRecieved, incomingData, sizeof(espnowRecieved));
+  memcpy(lastReceivedMac,mac,6);
   if(espnowReceiveSet==2){
-    inCom.print("~espnow {");
-    printMac((uint8_t *) mac);
-    if(debug){
-      inCom.print(" Bytes:");
-      inCom.print(len);
-    }
-    inCom.print(" ID:");
-    inCom.print(espnowRecieved.msgID);
+    if(espnowRecieved.msgID==0){
+      inCom.print(espnowRecieved.command);
+    }else{
+      char recBufChar[230];
+      sprintf(recBufChar,"~espnow {%02X:%02X:%02X:%02X:%02X:%02X ID:%d}---- %s"
+      ,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],espnowRecieved.msgID,espnowRecieved.command);
+      inCom.println(recBufChar);
+      /*
+        inCom.print("~espnow {");
+        printMac((uint8_t *) mac);
+        inCom.print(" ID:");
+        inCom.print(espnowRecieved.msgID);
 
-    inCom.print("}");
-    inCom.print("---- ");
-    inCom.println(espnowRecieved.command);
-    inCom.print(inCom.commandString);
+        inCom.print("}");
+        inCom.print("---- ");
+        inCom.println(espnowRecieved.command);
+        inCom.print(inCom.commandString);-----
+      */
+    }
   }
   if (espnowRecieved.msgID==2){
-    String receivedCommand = espnowRecieved.command;
-    inCom.parseCommandArray(receivedCommand,true);
-    identifyCommand(inCom.commandArray);
+    receivedCommand = espnowRecieved.command;
+  
   }
 }
 
@@ -648,6 +686,20 @@ void printMac(uint8_t mac[6]){
     sprintf(macString + 3 * i, "%02X:", mac[i]);
   }
   inCom.print(macString);
+}
+void mainSendFunction(char command[200],int msgID){
+  //--------YOU CANT SEND MORE THAN 3 PACKETS FROM DATARECV---------
+  strcpy(espnowMessage.command,command);
+  espnowMessage.msgID=msgID;
+  esp_err_t result;
+  
+  result= esp_now_send( peerInfoArray[9].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+  Serial.println(esp_err_to_name(result));
+  
+  if(debug){inCom.println("mainSendFunction");}
+  Serial.println(espnowMessage.command);
+  Serial.println("Sent");
+
 }
 
 
