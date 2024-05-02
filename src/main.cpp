@@ -661,17 +661,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       sprintf(recBufChar,"~espnow {%02X:%02X:%02X:%02X:%02X:%02X ID:%d}---- %s"
       ,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],espnowRecieved.msgID,espnowRecieved.command);
       inCom.println(recBufChar);
-      /*
-        inCom.print("~espnow {");
-        printMac((uint8_t *) mac);
-        inCom.print(" ID:");
-        inCom.print(espnowRecieved.msgID);
-
-        inCom.print("}");
-        inCom.print("---- ");
-        inCom.println(espnowRecieved.command);
-        inCom.print(inCom.commandString);-----
-      */
     }
   }
   if (espnowRecieved.msgID==2){
@@ -692,13 +681,9 @@ void mainSendFunction(char command[200],int msgID){
   strcpy(espnowMessage.command,command);
   espnowMessage.msgID=msgID;
   esp_err_t result;
-  
   result= esp_now_send( peerInfoArray[9].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
-  Serial.println(esp_err_to_name(result));
-  
-  if(debug){inCom.println("mainSendFunction");}
-  Serial.println(espnowMessage.command);
-  Serial.println("Sent");
+  if(debug){Serial.println(esp_err_to_name(result));}
+
 
 }
 
