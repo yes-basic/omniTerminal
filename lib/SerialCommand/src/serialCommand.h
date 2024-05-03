@@ -45,6 +45,16 @@ class serialCommand
         void print(const char v[]);void println(const char v[]);
         void print(long v);void println(long v);
         void print(String v);void println(String v);
+
+        void print(int v,const char color[15]);void println(int v,const char color[15]);
+        void print(char v[],const char color[15]);void println(char v[],const char color[15]);
+        void print(char v,const char color[15]);void println(char v,const char color[15]);
+        void print(const char v[],const char color[15]);void println(const char v[],const char color[15]);
+        void print(long v,const char color[15]);void println(long v,const char color[15]);
+        void print(String v,const char color[15]);void println(String v,const char color[15]);
+
+        char baseColor[15]="\033[37m";
+        char userColor[15]="\033[36m";
         void write(int v);
         typedef void (*sendFunctionPtr)(char command[200],int msgID);
         sendFunctionPtr sendFunction=nullptr;

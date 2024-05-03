@@ -37,6 +37,16 @@ void mainSendFunction(char command[200],int msgID);
   TFT_eSprite img = TFT_eSprite(&tft);
 #endif
 serialCommand inCom;
+//ANSI format
+  const char black[15]="\033[30m";
+  const char red[15]="\033[31m";
+  const char green[15]="\033[32m";
+  const char yellow[15]="\033[33m";
+  const char blue[15]="\033[34m";
+  const char magenta[15]="\033[35m";
+  const char cyan[15]="\033[36m";
+  const char white[15]="\033[37m";
+  
 //init misc var
   char breakChar='a';
   long millisLastRefresh;
@@ -131,14 +141,19 @@ void setup() {
   #ifdef USE_TFT_ESPI 
   //init TFT
     tft.init();
-    tft.setRotation(3);
+    tft.setRotation(1);
     tft.fillScreen(TFT_BLACK);
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
   #endif
+  
   //init ir
-    IrReceiver.begin(IR_RECEIVE_PIN_MOD,false);
-    IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
+    #ifdef IR_RECEIVE_PIN_MOD
+      IrReceiver.begin(IR_RECEIVE_PIN_MOD,false);
+    #endif
+    #ifdef IR_SEND_PIN_MOD
+      IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
+    #endif
   //file
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");
@@ -588,7 +603,7 @@ void identifyCommand(char commandArray[50][20]){
       //test
         case 8:{
           //mainSendFunction("hello",0);
-          inCom.send("hello");
+          inCom.println("hello",red);
         break;}
     }
   
@@ -683,8 +698,6 @@ void mainSendFunction(char command[200],int msgID){
   esp_err_t result;
   result= esp_now_send( peerInfoArray[9].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
   if(debug){Serial.println(esp_err_to_name(result));}
-
-
 }
 
 
