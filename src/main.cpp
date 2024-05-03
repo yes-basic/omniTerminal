@@ -137,7 +137,7 @@ USBHIDKeyboard Keyboard;
       "tgt",
       "listreg",
       "send",
-      "receive",
+      "rec",
       "init",
       "mac",
       "cmd",
@@ -541,7 +541,7 @@ void identifyCommand(char commandArray[50][20]){
                     espnowReceiveSet=2;
                     esp_now_register_recv_cb(OnDataRecv);
                     inCom.println("receive set to full");
-                  }
+                  }else{inCom.noRec("receive");}
                 }
               break;}
             //init
