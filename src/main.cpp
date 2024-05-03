@@ -5,12 +5,16 @@
 #include "SPIFFS.h"
 #include <esp_now.h>
 #include <WiFi.h>
+#include <USB.h>
+#include <USBHIDKeyboard.h>
+
 #define debug inCom.debug
 #define IR_SEND_PIN IR_SEND_PIN_MOD
 
 void refreshTFT(); 
 
 bool espnowtryinit();
+bool usbTryInit();
 void identifyCommand(char commandArray[50][20]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
@@ -37,6 +41,8 @@ void mainSendFunction(char command[200],int msgID);
   TFT_eSprite img = TFT_eSprite(&tft);
 #endif
 serialCommand inCom;
+USBHIDKeyboard Keyboard;
+
 //ANSI format
   const char black[15]="\033[30m";
   const char red[15]="\033[31m";
@@ -54,6 +60,7 @@ serialCommand inCom;
   char wordBuffer[30];
   int commandInt;
   fs::File file;
+  bool usbInit=false;
 //init espnow var
   typedef struct struct_message {
     char command[200];
@@ -82,7 +89,8 @@ serialCommand inCom;
       "/file",
       "/espnow",
       "/run",
-      "/test"
+      "/test",
+      "/usb"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -135,6 +143,17 @@ serialCommand inCom;
       "cmd",
       "pair"
     };
+  //usb
+    char usbIndex[50][20]={
+      "STRING",
+      "REM",
+      "GUI",
+      "ENTER",
+      "TAB",
+      "ALT"
+
+
+    };
 void setup() {
   //init serial
     Serial.begin(115200);
@@ -160,8 +179,8 @@ void setup() {
       return;
     }
     //startup commands
-      if(SPIFFS.exists("/startupCommands")){
-        fs::File startupCommands=SPIFFS.open("/startupCommands");
+      if(SPIFFS.exists("/startupCommands.txt")){
+        fs::File startupCommands=SPIFFS.open("/startupCommands.txt");
         while(startupCommands.available()){
           String startCommand = startupCommands.readStringUntil('\n');
           startCommand.trim();
@@ -602,8 +621,42 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //test
         case 8:{
-          //mainSendFunction("hello",0);
-          inCom.println("hello",red);
+            Keyboard.begin();
+            USB.begin();
+            //look at how fast this types, it just instantly prints whatever!look at how fast this types, it just instantly prints whatever!
+            delay(500);
+            Keyboard.print("look at how fast this types, it just instantly prints whatever!");
+        break;}
+      //usb
+        case 9:{
+          if(strcmp(commandArray[1],"deinit")==0){
+            Keyboard.end();
+            usbInit=false;
+          }else{
+            if(usbTryInit()){
+              switch (inCom.multiComp(commandArray[1],usbIndex))
+              {
+                //norec
+                  case -1:{
+                    inCom.noRec("usb");
+                  break;}
+                //STRING
+                  case 0:{
+                    char HIDsendString[200];
+                    strcpy(HIDsendString,commandArray[2]);
+                    for(int i=0;i<20;i++){
+                      if(strcmp(commandArray[i+3],"")){
+                        strcat(HIDsendString," ");
+                        strcat(HIDsendString,commandArray[i+3]);
+                      }
+                    }
+                    Keyboard.print(HIDsendString);
+                  break;}
+                
+              }
+            }
+          }
+
         break;}
     }
   
@@ -637,6 +690,22 @@ bool espnowtryinit(){
       esp_now_register_send_cb(OnDataSent);
       
 
+      return true;
+    }
+  }else{
+    return true;
+  }
+}
+
+bool usbTryInit(){
+  if(!usbInit){
+    Keyboard.begin();
+    if (!USB.begin()) {
+      inCom.println("Error initializing USB");
+      return false;
+    }else{
+      usbInit=true;
+      inCom.println("--initialized USB--");
       return true;
     }
   }else{
@@ -699,8 +768,4 @@ void mainSendFunction(char command[200],int msgID){
   result= esp_now_send( peerInfoArray[9].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
   if(debug){Serial.println(esp_err_to_name(result));}
 }
-
-
-
-
 
