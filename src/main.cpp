@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <serialCommand.h>
-#include <TFT_eSPI.h>
+#include "TFT_eSPI.h"
 #include "SPI.h"
 #include "SPIFFS.h"
 #include <esp_now.h>
@@ -621,11 +621,18 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //test
         case 8:{
-            Keyboard.begin();
-            USB.begin();
-            //look at how fast this types, it just instantly prints whatever!look at how fast this types, it just instantly prints whatever!
-            delay(500);
-            Keyboard.print("look at how fast this types, it just instantly prints whatever!");
+          Serial.begin(115200);
+          Serial.println("sent");
+          pinMode(21,OUTPUT);
+          Keyboard.begin();
+          USB.begin();
+          
+          delay(500);
+          Keyboard.print("look at how fast this types, it just instantly prints whatever!");
+          
+          delay(5000);
+          Keyboard.end();
+          Serial.begin(115200);
         break;}
       //usb
         case 9:{
