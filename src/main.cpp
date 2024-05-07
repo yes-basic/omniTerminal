@@ -1,61 +1,81 @@
-/*
-  Keyboard Message test
-
-  For the Arduino Leonardo and Micro.
-
-  Sends a text string when a button is pressed.
-
-  The circuit:
-  - pushbutton attached from pin 0 to ground
-  - 10 kilohm resistor attached from pin 0 to +5V
-
-  created 24 Oct 2011
-  modified 27 Mar 2012
-  by Tom Igoe
-  modified 11 Nov 2013
-  by Scott Fitzgerald
-
-  This example code is in the public domain.
-
-  http://www.arduino.cc/en/Tutorial/KeyboardMessage
-*/
+#include "Arduino.h"
 #if ARDUINO_USB_MODE
 #warning This sketch should be used when USB is in OTG mode
 void setup(){}
 void loop(){}
 #else
-
 #include "USB.h"
-#include "USBHIDKeyboard.h"
-USBHIDKeyboard Keyboard;
+#include "FirmwareMSC.h"
 
-const int buttonPin = 0;          // input pin for pushbutton
-int previousButtonState = HIGH;   // for checking the state of a pushButton
-int counter = 0;                  // button push counter
+#if !ARDUINO_USB_MSC_ON_BOOT
+FirmwareMSC MSC_Update;
+#endif
+#if ARDUINO_USB_CDC_ON_BOOT
+#define HWSerial Serial0
+#define USBSerial Serial
+#else
+#define HWSerial Serial
+USBCDC USBSerial;
+#endif
+
+static void usbEventCallback(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
+  if(event_base == ARDUINO_USB_EVENTS){
+    arduino_usb_event_data_t * data = (arduino_usb_event_data_t*)event_data;
+    switch (event_id){
+      case ARDUINO_USB_STARTED_EVENT:
+        HWSerial.println("USB PLUGGED");
+        break;
+      case ARDUINO_USB_STOPPED_EVENT:
+        HWSerial.println("USB UNPLUGGED");
+        break;
+      case ARDUINO_USB_SUSPEND_EVENT:
+        HWSerial.printf("USB SUSPENDED: remote_wakeup_en: %u\n", data->suspend.remote_wakeup_en);
+        break;
+      case ARDUINO_USB_RESUME_EVENT:
+        HWSerial.println("USB RESUMED");
+        break;
+      
+      default:
+        break;
+    }
+  } else if(event_base == ARDUINO_FIRMWARE_MSC_EVENTS){
+    arduino_firmware_msc_event_data_t * data = (arduino_firmware_msc_event_data_t*)event_data;
+    switch (event_id){
+      case ARDUINO_FIRMWARE_MSC_START_EVENT:
+        HWSerial.println("MSC Update Start");
+        break;
+      case ARDUINO_FIRMWARE_MSC_WRITE_EVENT:
+        //HWSerial.printf("MSC Update Write %u bytes at offset %u\n", data->write.size, data->write.offset);
+        HWSerial.print(".");
+        break;
+      case ARDUINO_FIRMWARE_MSC_END_EVENT:
+        HWSerial.printf("\nMSC Update End: %u bytes\n", data->end.size);
+        break;
+      case ARDUINO_FIRMWARE_MSC_ERROR_EVENT:
+        HWSerial.printf("MSC Update ERROR! Progress: %u bytes\n", data->error.size);
+        break;
+      case ARDUINO_FIRMWARE_MSC_POWER_EVENT:
+        HWSerial.printf("MSC Update Power: power: %u, start: %u, eject: %u", data->power.power_condition, data->power.start, data->power.load_eject);
+        break;
+      
+      default:
+        break;
+    }
+  }
+}
 
 void setup() {
-  // make the pushButton pin an input:
-  pinMode(buttonPin, INPUT_PULLUP);
-  // initialize control over the keyboard:
-  Keyboard.begin();
+  HWSerial.begin(115200);
+  HWSerial.setDebugOutput(true);
+
+  USB.onEvent(usbEventCallback);
+  MSC_Update.onEvent(usbEventCallback);
+  MSC_Update.begin();
+  USBSerial.begin();
   USB.begin();
 }
 
 void loop() {
-  // read the pushbutton:
-  int buttonState = digitalRead(buttonPin);
-  // if the button state has changed,
-  if ((buttonState != previousButtonState)
-      // and it's currently pressed:
-      && (buttonState == LOW)) {
-    // increment the button counter
-    counter++;
-    // type out a message
-    Keyboard.print("You pressed the button ");
-    Keyboard.print(counter);
-    Keyboard.println(" times.");
-  }
-  // save the current button state for comparison next time:
-  previousButtonState = buttonState;
+  // put your main code here, to run repeatedly
 }
 #endif /* ARDUINO_USB_MODE */
