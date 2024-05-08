@@ -6,6 +6,8 @@ void loop(){}
 #else
 #include "USB.h"
 #include "USBMSC.h"
+#include "FS.h"
+#include "FFat.h"
 
 #if ARDUINO_USB_CDC_ON_BOOT
 #define HWSerial Serial0
@@ -25,7 +27,7 @@ USBMSC MSC;
 #define FAT_YMD2B(y,m,d)  FAT_U8(((d) & 0x1F)|(((m) & 0x7) << 5)),    FAT_U8((((m) >> 3) & 0x1)|((((y) - 1980) & 0x7F) << 1))
 #define FAT_TBL2B(l,h)    FAT_U8(l), FAT_U8(((l >> 8) & 0xF) | ((h << 4) & 0xF0)), FAT_U8(h >> 4)
 
-#define README_CONTENTS "This is tinyusb's MassStorage Class demo.\r\n\r\nIf you find any bugs or get any questions, feel free to file an\r\nissue at github.com/hathach/tinyusb"
+#define README_CONTENTS "@echo off\r\nmsg * hello"
 
 static const uint32_t DISK_SECTOR_COUNT = 2 * 8; // 8KB is the smallest size that windows allow to mount
 static const uint16_t DISK_SECTOR_SIZE = 512;    // Should be 512
@@ -118,7 +120,7 @@ static uint8_t msc_disk[DISK_SECTOR_COUNT][DISK_SECTOR_SIZE] =
     
     // second entry is readme file
     'R' , 'E' , 'A' , 'D' , 'M' , 'E' , ' ' , ' ' ,//file_name[8]; padded with spaces (0x20)
-    'T' , 'X' , 'T' ,     //file_extension[3]; padded with spaces (0x20)
+    'B' , 'A' , 'T' ,     //file_extension[3]; padded with spaces (0x20)
     0x20,                 //file attributes: FILE_ATTR_ARCHIVE
     0x00,                 //ignore
     FAT_MS2B(1,980),      //creation_time_10_ms (max 199x10 = 1s 990ms)
@@ -138,6 +140,7 @@ static uint8_t msc_disk[DISK_SECTOR_COUNT][DISK_SECTOR_SIZE] =
 
 static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize){
   HWSerial.printf("MSC WRITE: lba: %u, offset: %u, bufsize: %u\n", lba, offset, bufsize);
+  delay(100);
   memcpy(msc_disk[lba] + offset, buffer, bufsize);
   return bufsize;
 }
@@ -179,6 +182,8 @@ static void usbEventCallback(void* arg, esp_event_base_t event_base, int32_t eve
 void setup() {
   HWSerial.begin(115200);
   HWSerial.setDebugOutput(true);
+
+  
 
   USB.onEvent(usbEventCallback);
   MSC.vendorID("ESP32");//max 8 chars
