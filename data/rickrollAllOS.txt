@@ -1,0 +1,10 @@
+/espnow cmd /usb GUI
+/espnow cmd /usb DELAY 2000
+/espnow cmd /usb STRING Chrome
+/espnow cmd /usb DELAY 2000
+/espnow cmd /usb ENTER
+/espnow cmd /usb DELAY 2000
+/espnow cmd /usb ALT d
+/espnow cmd /usb DELAY 2000
+/espnow cmd /usb STRING https://www.youtube.com/watch?v=xvFZjo5PgG0
+/espnow cmd /usb ENTER

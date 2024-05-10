@@ -1,0 +1,5 @@
+/espnow cmd /usb GUI r
+/usb DELAY 1000
+/espnow cmd /usb STRING https://tinyurl.com/4az8jbn7
+/usb DELAY 500
+/espnow cmd /usb ENTER

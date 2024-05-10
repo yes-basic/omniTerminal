@@ -2,4 +2,5 @@
 /espnow register 1 74:4D:BD:81:9C:78
 /espnow register 2 DC:DA:0C:30:B3:E4
 /espnow register 3 DC:DA:0C:30:AB:14
-/espnow receive full
+/espnow rec full
+/espnow tgt 2
