@@ -1,180 +1,127 @@
 #include "Arduino.h"
-#if ARDUINO_USB_MODE
-#warning This sketch should be used when USB is in OTG mode
-void setup(){}
-void loop(){}
-#else
 #include "USB.h"
 #include "USBMSC.h"
-#include "FS.h"
-#include "FFat.h"
+#include "driver/sdmmc_host.h"
+#include "driver/sdspi_host.h"
+#include "esp_vfs_fat.h"
+#include "pin_config.h"
+#include "sdmmc_cmd.h"
 
-#if ARDUINO_USB_CDC_ON_BOOT
-#define HWSerial Serial0
-#define USBSerial Serial
-#else
-#define HWSerial Serial
-USBCDC USBSerial;
-#endif
+/* external library */
+/* To use Arduino, you need to place lv_conf.h in the \Arduino\libraries directory */
+#include "OneButton.h" // https://github.com/mathertel/OneButton
+#include <FastLED.h>   // https://github.com/FastLED/FastLED
 
+CRGB leds;
+OneButton button(BTN_PIN, true);
 USBMSC MSC;
+USBCDC USBSerial;
+#define HWSerial    Serial0
+#define MOUNT_POINT "/sdcard"
+sdmmc_card_t *card;
 
-#define FAT_U8(v) ((v) & 0xFF)
-#define FAT_U16(v) FAT_U8(v), FAT_U8((v) >> 8)
-#define FAT_U32(v) FAT_U8(v), FAT_U8((v) >> 8), FAT_U8((v) >> 16), FAT_U8((v) >> 24)
-#define FAT_MS2B(s,ms)    FAT_U8(((((s) & 0x1) * 1000) + (ms)) / 10)
-#define FAT_HMS2B(h,m,s)  FAT_U8(((s) >> 1)|(((m) & 0x7) << 5)),      FAT_U8((((m) >> 3) & 0x7)|((h) << 3))
-#define FAT_YMD2B(y,m,d)  FAT_U8(((d) & 0x1F)|(((m) & 0x7) << 5)),    FAT_U8((((m) >> 3) & 0x1)|((((y) - 1980) & 0x7F) << 1))
-#define FAT_TBL2B(l,h)    FAT_U8(l), FAT_U8(((l >> 8) & 0xF) | ((h << 4) & 0xF0)), FAT_U8(h >> 4)
+void led_task(void *param) {
+  while (1) {
+    static uint8_t hue = 0;
+    leds = CHSV(hue++, 0XFF, 100);
+    FastLED.show();
+    delay(50);
+  }
+}
 
-#define README_CONTENTS "@echo off\r\nmsg * hello"
+void sd_init(void) {
+  esp_err_t ret;
+  const char mount_point[] = MOUNT_POINT;
+  esp_vfs_fat_sdmmc_mount_config_t mount_config = {.format_if_mount_failed = false, .max_files = 5, .allocation_unit_size = 16 * 1024};
 
-static const uint32_t DISK_SECTOR_COUNT = 2 * 8; // 8KB is the smallest size that windows allow to mount
-static const uint16_t DISK_SECTOR_SIZE = 512;    // Should be 512
-static const uint16_t DISC_SECTORS_PER_TABLE = 1; //each table sector can fit 170KB (340 sectors)
+  sdmmc_host_t host = {
+      .flags = SDMMC_HOST_FLAG_4BIT | SDMMC_HOST_FLAG_DDR,
+      .slot = SDMMC_HOST_SLOT_1,
+      .max_freq_khz = SDMMC_FREQ_DEFAULT,
+      .io_voltage = 3.3f,
+      .init = &sdmmc_host_init,
+      .set_bus_width = &sdmmc_host_set_bus_width,
+      .get_bus_width = &sdmmc_host_get_slot_width,
+      .set_bus_ddr_mode = &sdmmc_host_set_bus_ddr_mode,
+      .set_card_clk = &sdmmc_host_set_card_clk,
+      .do_transaction = &sdmmc_host_do_transaction,
+      .deinit = &sdmmc_host_deinit,
+      .io_int_enable = sdmmc_host_io_int_enable,
+      .io_int_wait = sdmmc_host_io_int_wait,
+      .command_timeout_ms = 0,
+  };
+  sdmmc_slot_config_t slot_config = {
+      .clk = (gpio_num_t)SD_MMC_CLK_PIN,
+      .cmd = (gpio_num_t)SD_MMC_CMD_PIN,
+      .d0 = (gpio_num_t)SD_MMC_D0_PIN,
+      .d1 = (gpio_num_t)SD_MMC_D1_PIN,
+      .d2 = (gpio_num_t)SD_MMC_D2_PIN,
+      .d3 = (gpio_num_t)SD_MMC_D3_PIN,
+      .cd = SDMMC_SLOT_NO_CD,
+      .wp = SDMMC_SLOT_NO_WP,
+      .width = 4, // SDMMC_SLOT_WIDTH_DEFAULT,
+      .flags = SDMMC_SLOT_FLAG_INTERNAL_PULLUP,
+  };
 
-static uint8_t msc_disk[DISK_SECTOR_COUNT][DISK_SECTOR_SIZE] =
-{
-  //------------- Block0: Boot Sector -------------//
-  {
-    // Header (62 bytes)
-    0xEB, 0x3C, 0x90, //jump_instruction
-    'M' , 'S' , 'D' , 'O' , 'S' , '5' , '.' , '0' , //oem_name
-    FAT_U16(DISK_SECTOR_SIZE), //bytes_per_sector
-    FAT_U8(1),    //sectors_per_cluster
-    FAT_U16(1),   //reserved_sectors_count
-    FAT_U8(1),    //file_alloc_tables_num
-    FAT_U16(16),  //max_root_dir_entries
-    FAT_U16(DISK_SECTOR_COUNT), //fat12_sector_num
-    0xF8,         //media_descriptor
-    FAT_U16(DISC_SECTORS_PER_TABLE),   //sectors_per_alloc_table;//FAT12 and FAT16
-    FAT_U16(1),   //sectors_per_track;//A value of 0 may indicate LBA-only access
-    FAT_U16(1),   //num_heads
-    FAT_U32(0),   //hidden_sectors_count
-    FAT_U32(0),   //total_sectors_32
-    0x00,         //physical_drive_number;0x00 for (first) removable media, 0x80 for (first) fixed disk
-    0x00,         //reserved
-    0x29,         //extended_boot_signature;//should be 0x29
-    FAT_U32(0x1234), //serial_number: 0x1234 => 1234
-    'T' , 'i' , 'n' , 'y' , 'U' , 'S' , 'B' , ' ' , 'M' , 'S' , 'C' , //volume_label padded with spaces (0x20)
-    'F' , 'A' , 'T' , '1' , '2' , ' ' , ' ' , ' ' ,  //file_system_type padded with spaces (0x20)
+  gpio_set_pull_mode((gpio_num_t)SD_MMC_CMD_PIN, GPIO_PULLUP_ONLY); // CMD, needed in 4- and 1- line modes
+  gpio_set_pull_mode((gpio_num_t)SD_MMC_D0_PIN, GPIO_PULLUP_ONLY);  // D0, needed in 4- and 1-line modes
+  gpio_set_pull_mode((gpio_num_t)SD_MMC_D1_PIN, GPIO_PULLUP_ONLY);  // D1, needed in 4-line mode only
+  gpio_set_pull_mode((gpio_num_t)SD_MMC_D2_PIN, GPIO_PULLUP_ONLY);  // D2, needed in 4-line mode only
+  gpio_set_pull_mode((gpio_num_t)SD_MMC_D3_PIN, GPIO_PULLUP_ONLY);  // D3, needed in 4- and 1-line modes
 
-    // Zero up to 2 last bytes of FAT magic code (448 bytes)
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  if (ret != ESP_OK) {
+    if (ret == ESP_FAIL) {
+      USBSerial.println("Failed to mount filesystem. "
+                        "If you want the card to be formatted, set the EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
+    } else {
+      USBSerial.printf("Failed to initialize the card (%s). "
+                       "Make sure SD card lines have pull-up resistors in place.",
+                       esp_err_to_name(ret));
+    }
+    return;
+  }
+}
 
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-
-     //boot signature (2 bytes)
-    0x55, 0xAA
-  },
-
-  //------------- Block1: FAT12 Table -------------//
-  {
-    FAT_TBL2B(0xFF8, 0xFFF), FAT_TBL2B(0xFFF, 0x000) // first 2 entries must be 0xFF8 0xFFF, third entry is cluster end of readme file
-  },
-
-  //------------- Block2: Root Directory -------------//
-  {
-    // first entry is volume label
-    'E' , 'S' , 'P' , '3' , '2' , 'S' , '2' , ' ' , 
-    'M' , 'S' , 'C' , 
-    0x08, //FILE_ATTR_VOLUME_LABEL
-    0x00, 
-    FAT_MS2B(0,0), 
-    FAT_HMS2B(0,0,0),
-    FAT_YMD2B(0,0,0), 
-    FAT_YMD2B(0,0,0), 
-    FAT_U16(0), 
-    FAT_HMS2B(13,42,30),  //last_modified_hms
-    FAT_YMD2B(2018,11,5), //last_modified_ymd
-    FAT_U16(0), 
-    FAT_U32(0),
-    
-    // second entry is readme file
-    'R' , 'E' , 'A' , 'D' , 'M' , 'E' , ' ' , ' ' ,//file_name[8]; padded with spaces (0x20)
-    'B' , 'A' , 'T' ,     //file_extension[3]; padded with spaces (0x20)
-    0x20,                 //file attributes: FILE_ATTR_ARCHIVE
-    0x00,                 //ignore
-    FAT_MS2B(1,980),      //creation_time_10_ms (max 199x10 = 1s 990ms)
-    FAT_HMS2B(13,42,36),  //create_time_hms [5:6:5] => h:m:(s/2)
-    FAT_YMD2B(2018,11,5), //create_time_ymd [7:4:5] => (y+1980):m:d
-    FAT_YMD2B(2020,11,5), //last_access_ymd
-    FAT_U16(0),           //extended_attributes
-    FAT_HMS2B(13,44,16),  //last_modified_hms
-    FAT_YMD2B(2019,11,5), //last_modified_ymd
-    FAT_U16(2),           //start of file in cluster
-    FAT_U32(sizeof(README_CONTENTS) - 1) //file size
-  },
-
-  //------------- Block3: Readme Content -------------//
-  README_CONTENTS
-};
-
-static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t* buffer, uint32_t bufsize){
-  HWSerial.printf("MSC WRITE: lba: %u, offset: %u, bufsize: %u\n", lba, offset, bufsize);
-  delay(100);
-  memcpy(msc_disk[lba] + offset, buffer, bufsize);
+static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
+  // HWSerial.printf("MSC WRITE: lba: %u, offset: %u, bufsize: %u\n", lba, offset, bufsize);
+  uint32_t count = (bufsize / card->csd.sector_size);
+  sdmmc_write_sectors(card, buffer + offset, lba, count);
   return bufsize;
 }
 
-static int32_t onRead(uint32_t lba, uint32_t offset, void* buffer, uint32_t bufsize){
-  HWSerial.printf("MSC READ: lba: %u, offset: %u, bufsize: %u\n", lba, offset, bufsize);
-  memcpy(buffer, msc_disk[lba] + offset, bufsize);
+static int32_t onRead(uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
+  // HWSerial.printf("MSC READ: lba: %u, offset: %u, bufsize: %u\n", lba, offset, bufsize);
+  uint32_t count = (bufsize / card->csd.sector_size);
+  sdmmc_read_sectors(card, buffer + offset, lba, count);
   return bufsize;
 }
 
-static bool onStartStop(uint8_t power_condition, bool start, bool load_eject){
+static bool onStartStop(uint8_t power_condition, bool start, bool load_eject) {
   HWSerial.printf("MSC START/STOP: power: %u, start: %u, eject: %u\n", power_condition, start, load_eject);
   return true;
 }
 
-static void usbEventCallback(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
-  if(event_base == ARDUINO_USB_EVENTS){
-    arduino_usb_event_data_t * data = (arduino_usb_event_data_t*)event_data;
-    switch (event_id){
-      case ARDUINO_USB_STARTED_EVENT:
-        HWSerial.println("USB PLUGGED");
-        break;
-      case ARDUINO_USB_STOPPED_EVENT:
-        HWSerial.println("USB UNPLUGGED");
-        break;
-      case ARDUINO_USB_SUSPEND_EVENT:
-        HWSerial.printf("USB SUSPENDED: remote_wakeup_en: %u\n", data->suspend.remote_wakeup_en);
-        break;
-      case ARDUINO_USB_RESUME_EVENT:
-        HWSerial.println("USB RESUMED");
-        break;
-      
-      default:
-        break;
+static void usbEventCallback(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+  if (event_base == ARDUINO_USB_EVENTS) {
+    arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
+    switch (event_id) {
+    case ARDUINO_USB_STARTED_EVENT:
+      HWSerial.println("USB PLUGGED");
+      break;
+    case ARDUINO_USB_STOPPED_EVENT:
+      HWSerial.println("USB UNPLUGGED");
+      break;
+    case ARDUINO_USB_SUSPEND_EVENT:
+      HWSerial.printf("USB SUSPENDED: remote_wakeup_en: %u\n", data->suspend.remote_wakeup_en);
+      break;
+    case ARDUINO_USB_RESUME_EVENT:
+      HWSerial.println("USB RESUMED");
+      break;
+
+    default:
+      break;
     }
   }
 }
@@ -182,23 +129,26 @@ static void usbEventCallback(void* arg, esp_event_base_t event_base, int32_t eve
 void setup() {
   HWSerial.begin(115200);
   HWSerial.setDebugOutput(true);
-
-  
-
+  sd_init();
   USB.onEvent(usbEventCallback);
-  MSC.vendorID("ESP32");//max 8 chars
-  MSC.productID("USB_MSC");//max 16 chars
-  MSC.productRevision("1.0");//max 4 chars
+  MSC.vendorID("LILYGO");       // max 8 chars
+  MSC.productID("T-Dongle-S3"); // max 16 chars
+  MSC.productRevision("1.0");   // max 4 chars
   MSC.onStartStop(onStartStop);
   MSC.onRead(onRead);
   MSC.onWrite(onWrite);
   MSC.mediaPresent(true);
-  MSC.begin(DISK_SECTOR_COUNT, DISK_SECTOR_SIZE);
+  MSC.begin(card->csd.capacity, card->csd.sector_size);
   USBSerial.begin();
   USB.begin();
+
+  // BGR ordering is typical
+  FastLED.addLeds<APA102, LED_DI_PIN, LED_CI_PIN, BGR>(&leds, 1);
+  button.attachClick([] { USBSerial.println("Hello T-Dongle-S3"); });
+  xTaskCreatePinnedToCore(led_task, "led_task", 1024, NULL, 1, NULL, 0);
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
+void loop() { // Put your main code here, to run repeatedly:
+  button.tick();
+  delay(5);
 }
-#endif /* ARDUINO_USB_MODE */
