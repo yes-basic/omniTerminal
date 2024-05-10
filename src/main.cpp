@@ -6,6 +6,9 @@
 #include "esp_vfs_fat.h"
 #include "pin_config.h"
 #include "sdmmc_cmd.h"
+#include "USBHIDKeyboard.h"
+USBHIDKeyboard Keyboard;
+
 
 /* external library */
 /* To use Arduino, you need to place lv_conf.h in the \Arduino\libraries directory */
@@ -139,12 +142,15 @@ void setup() {
   MSC.onWrite(onWrite);
   MSC.mediaPresent(true);
   MSC.begin(card->csd.capacity, card->csd.sector_size);
-  USBSerial.begin();
+  USBSerial.begin(115200);
   USB.begin();
+  Keyboard.begin();
+  
+  
 
   // BGR ordering is typical
   FastLED.addLeds<APA102, LED_DI_PIN, LED_CI_PIN, BGR>(&leds, 1);
-  button.attachClick([] { USBSerial.println("Hello T-Dongle-S3"); });
+  button.attachClick([] { USBSerial.println("Hello T-Dongle-S3"); Keyboard.print("You pressed the button "); });
   xTaskCreatePinnedToCore(led_task, "led_task", 1024, NULL, 1, NULL, 0);
 }
 
