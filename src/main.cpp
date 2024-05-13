@@ -7,6 +7,8 @@
 #include "pin_config.h"
 #include "sdmmc_cmd.h"
 #include "USBHIDKeyboard.h"
+#include <stdio.h>
+#include <dirent.h>
 USBHIDKeyboard Keyboard;
 
 
@@ -145,7 +147,24 @@ void setup() {
   USBSerial.begin(115200);
   USB.begin();
   Keyboard.begin();
-  
+  delay(3000);
+
+  DIR *dir = opendir("/sdcard");
+    if (dir == NULL) {
+        USBSerial.printf("Failed to open directory\n");
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {
+            USBSerial.printf("File: %s\n", entry->d_name);
+        } else if (entry->d_type == DT_DIR) {
+            USBSerial.printf("Directory: %s\n", entry->d_name);
+        }
+    }
+
+    closedir(dir);
   
 
   // BGR ordering is typical
