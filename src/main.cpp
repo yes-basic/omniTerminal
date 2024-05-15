@@ -24,6 +24,7 @@ USBCDC USBSerial;
 #define HWSerial    Serial0
 #define MOUNT_POINT "/sdcard"
 sdmmc_card_t *card;
+bool toggleMSC=false;
 
 void led_task(void *param) {
   while (1) {
@@ -142,7 +143,6 @@ void setup() {
   MSC.onStartStop(onStartStop);
   MSC.onRead(onRead);
   MSC.onWrite(onWrite);
-  MSC.mediaPresent(true);
   MSC.begin(card->csd.capacity, card->csd.sector_size);
   USBSerial.begin(115200);
   USB.begin();
@@ -169,7 +169,29 @@ void setup() {
 
   // BGR ordering is typical
   FastLED.addLeds<APA102, LED_DI_PIN, LED_CI_PIN, BGR>(&leds, 1);
-  button.attachClick([] { USBSerial.println("Hello T-Dongle-S3"); Keyboard.print("You pressed the button "); });
+  button.attachClick([] { USBSerial.println("Hello T-Dongle-S3"); Keyboard.print("You pressed the button ");
+  DIR *dir = opendir("/sdcard");
+    if (dir == NULL) {
+        USBSerial.printf("Failed to open directory\n");
+        return;
+    }
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {
+            USBSerial.printf("File: %s\n", entry->d_name);
+        } else if (entry->d_type == DT_DIR) {
+            USBSerial.printf("Directory: %s\n", entry->d_name);
+        }
+    }
+
+    closedir(dir);
+    toggleMSC=!toggleMSC;
+    MSC.mediaPresent(toggleMSC);
+    USBSerial.println(toggleMSC);
+
+  
+   });
   xTaskCreatePinnedToCore(led_task, "led_task", 1024, NULL, 1, NULL, 0);
 }
 
