@@ -757,22 +757,41 @@ void identifyCommand(char commandArray[50][20]){
                   inCom.flush(false);
                 }
                 runFile.close();
-              }else if(false){
-              
               }else{
-                inCom.println("file not found",red);
+                char fileLocation[30]="/sdcard";
+                strcat(fileLocation,commandArray[1]);
+                FILE *SDrunFile = fopen(fileLocation,"r");
+                if(SDrunFile!=NULL){
+                  char buffer[256];
+                  // Read and print contents line by line
+                  while (fgets(buffer, sizeof(buffer), SDrunFile) != NULL) {
+                      String bufferString=buffer;
+                      bufferString.trim();
+                      inCom.println(bufferString);
+                      inCom.parseCommandArray(bufferString,false);
+                      identifyCommand(inCom.commandArray);
+                      inCom.flush(false);
+                  }
+                  fclose(SDrunFile);
+                }else{
+                  inCom.println("file not found",red);
+                }
               }
+                
         break;}
       //test
         case 8:{
           FILE *thing = fopen("/sdcard/hello.txt","r");
-          char buffer[256];
-          // Read and print contents line by line
-          while (fgets(buffer, sizeof(buffer), thing) != NULL) {
-              inCom.println(buffer);
+          if(thing!=NULL){
+            char buffer[256];
+            // Read and print contents line by line
+            while (fgets(buffer, sizeof(buffer), thing) != NULL) {
+                inCom.println(buffer);
+            }
+            fclose(thing);
+          }else{
+            inCom.println("file not found");
           }
-          fclose(thing);
-
           /*
             DIR *dir = opendir("/sdcard");
             
