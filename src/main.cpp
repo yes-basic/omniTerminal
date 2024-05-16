@@ -9,6 +9,7 @@
 #include <USBHIDKeyboard.h>
 #include "pin_config.h"
 
+
 serialCommand inCom;
 
 #ifdef USE_SD_MMC
@@ -756,22 +757,44 @@ void identifyCommand(char commandArray[50][20]){
                   inCom.flush(false);
                 }
                 runFile.close();
+              }else if(false){
+              
+              }else{
+                inCom.println("file not found",red);
               }
         break;}
       //test
         case 8:{
-          Serial.begin(115200);
-          Serial.println("sent");
-          pinMode(21,OUTPUT);
-          Keyboard.begin();
-          USB.begin();
-          
-          delay(500);
-          Keyboard.press('h');
-          
-          delay(5000);
-          Keyboard.end();
-          Serial.begin(115200);
+          FILE *thing = fopen("/sdcard/hello.txt","r");
+          char buffer[256];
+          // Read and print contents line by line
+          while (fgets(buffer, sizeof(buffer), thing) != NULL) {
+              inCom.println(buffer);
+          }
+          fclose(thing);
+
+          /*
+            DIR *dir = opendir("/sdcard");
+            
+            if (dir == NULL) {
+                inCom.println("Failed to open directory");
+                return;
+            }
+
+            struct dirent *entry;
+
+            
+            while ((entry = readdir(dir)) != NULL) {
+                if (entry->d_type == DT_REG) {
+                    inCom.print("File: ");
+                    inCom.println(entry->d_name);
+                } else if (entry->d_type == DT_DIR) {
+                    inCom.print("Directory: ");
+                    inCom.println(entry->d_name);
+                }
+            }
+            closedir(dir);
+            */
         break;}
       //usb
         case 9:{
