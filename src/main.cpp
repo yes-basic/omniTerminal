@@ -7,6 +7,121 @@
 #include <WiFi.h>
 #include <USB.h>
 #include <USBHIDKeyboard.h>
+#include "pin_config.h"
+
+serialCommand inCom;
+
+#ifdef USE_SD_MMC
+  #include "USBMSC.h"
+  #include "driver/sdmmc_host.h"
+  #include "driver/sdspi_host.h"
+  #include "esp_vfs_fat.h"
+  #include "sdmmc_cmd.h"
+  #include <stdio.h>
+  #include <dirent.h>
+
+  USBMSC MSC;
+
+  #define MOUNT_POINT "/sdcard"
+  sdmmc_card_t *card;
+
+
+  void sd_init(void) {
+    esp_err_t ret;
+    const char mount_point[] = MOUNT_POINT;
+    esp_vfs_fat_sdmmc_mount_config_t mount_config = {.format_if_mount_failed = false, .max_files = 5, .allocation_unit_size = 16 * 1024};
+
+    sdmmc_host_t host = {
+        .flags = SDMMC_HOST_FLAG_4BIT | SDMMC_HOST_FLAG_DDR,
+        .slot = SDMMC_HOST_SLOT_1,
+        .max_freq_khz = SDMMC_FREQ_DEFAULT,
+        .io_voltage = 3.3f,
+        .init = &sdmmc_host_init,
+        .set_bus_width = &sdmmc_host_set_bus_width,
+        .get_bus_width = &sdmmc_host_get_slot_width,
+        .set_bus_ddr_mode = &sdmmc_host_set_bus_ddr_mode,
+        .set_card_clk = &sdmmc_host_set_card_clk,
+        .do_transaction = &sdmmc_host_do_transaction,
+        .deinit = &sdmmc_host_deinit,
+        .io_int_enable = sdmmc_host_io_int_enable,
+        .io_int_wait = sdmmc_host_io_int_wait,
+        .command_timeout_ms = 0,
+    };
+    sdmmc_slot_config_t slot_config = {
+        .clk = (gpio_num_t)SD_MMC_CLK_PIN,
+        .cmd = (gpio_num_t)SD_MMC_CMD_PIN,
+        .d0 = (gpio_num_t)SD_MMC_D0_PIN,
+        .d1 = (gpio_num_t)SD_MMC_D1_PIN,
+        .d2 = (gpio_num_t)SD_MMC_D2_PIN,
+        .d3 = (gpio_num_t)SD_MMC_D3_PIN,
+        .cd = SDMMC_SLOT_NO_CD,
+        .wp = SDMMC_SLOT_NO_WP,
+        .width = 4, // SDMMC_SLOT_WIDTH_DEFAULT,
+        .flags = SDMMC_SLOT_FLAG_INTERNAL_PULLUP,
+    };
+
+    gpio_set_pull_mode((gpio_num_t)SD_MMC_CMD_PIN, GPIO_PULLUP_ONLY); // CMD, needed in 4- and 1- line modes
+    gpio_set_pull_mode((gpio_num_t)SD_MMC_D0_PIN, GPIO_PULLUP_ONLY);  // D0, needed in 4- and 1-line modes
+    gpio_set_pull_mode((gpio_num_t)SD_MMC_D1_PIN, GPIO_PULLUP_ONLY);  // D1, needed in 4-line mode only
+    gpio_set_pull_mode((gpio_num_t)SD_MMC_D2_PIN, GPIO_PULLUP_ONLY);  // D2, needed in 4-line mode only
+    gpio_set_pull_mode((gpio_num_t)SD_MMC_D3_PIN, GPIO_PULLUP_ONLY);  // D3, needed in 4- and 1-line modes
+
+    ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
+
+    if (ret != ESP_OK) {
+      if (ret == ESP_FAIL) {
+        inCom.println("Failed to mount filesystem. "
+                          "If you want the card to be formatted, set the EXAMPLE_FORMAT_IF_MOUNT_FAILED menuconfig option.");
+      } else {
+        inCom.println("Failed to initialize the card .");
+        inCom.println(esp_err_to_name(ret));
+        }
+      return;
+    }
+  }
+
+  static int32_t onWrite(uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
+    // inCom.printf("MSC WRITE: lba: %u, offset: %u, bufsize: %u\n", lba, offset, bufsize);
+    uint32_t count = (bufsize / card->csd.sector_size);
+    sdmmc_write_sectors(card, buffer + offset, lba, count);
+    return bufsize;
+  }
+
+  static int32_t onRead(uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
+    // inCom.printf("MSC READ: lba: %u, offset: %u, bufsize: %u\n", lba, offset, bufsize);
+    uint32_t count = (bufsize / card->csd.sector_size);
+    sdmmc_read_sectors(card, buffer + offset, lba, count);
+    return bufsize;
+  }
+
+  static bool onStartStop(uint8_t power_condition, bool start, bool load_eject) {
+    //inCom.printf("MSC START/STOP: power: %u, start: %u, eject: %u\n", power_condition, start, load_eject);
+    return true;
+  }
+
+  static void usbEventCallback(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+    if (event_base == ARDUINO_USB_EVENTS) {
+      arduino_usb_event_data_t *data = (arduino_usb_event_data_t *)event_data;
+      switch (event_id) {
+      case ARDUINO_USB_STARTED_EVENT:
+        //inCom.println("USB PLUGGED");
+        break;
+      case ARDUINO_USB_STOPPED_EVENT:
+        //inCom.println("USB UNPLUGGED");
+        break;
+      case ARDUINO_USB_SUSPEND_EVENT:
+        //inCom.printf("USB SUSPENDED: remote_wakeup_en: %u\n", data->suspend.remote_wakeup_en);
+        break;
+      case ARDUINO_USB_RESUME_EVENT:
+        //inCom.println("USB RESUMED");
+        break;
+
+      default:
+        break;
+      }
+    }
+  }
+#endif
 
 #define debug inCom.debug
 #define IR_SEND_PIN IR_SEND_PIN_MOD
@@ -40,7 +155,7 @@ void mainSendFunction(char command[200],int msgID);
   TFT_eSPI tft = TFT_eSPI();
   TFT_eSprite img = TFT_eSprite(&tft);
 #endif
-serialCommand inCom;
+
 USBHIDKeyboard Keyboard;
 
 //ANSI format
@@ -147,7 +262,8 @@ USBHIDKeyboard Keyboard;
     char usbIndex[50][20]={
       "STRING",
       "REM",
-      "DELAY"
+      "DELAY",
+      "MSC",
 
 
     };
@@ -180,6 +296,21 @@ void setup() {
     #ifdef IR_SEND_PIN_MOD
       IrSender.begin(); // Start with IR_SEND_PIN as send pin and disable feedback LED at default feedback LED pin
     #endif
+
+  //init MSC
+    #ifdef USE_SD_MMC
+      sd_init();
+      USB.onEvent(usbEventCallback);
+      MSC.vendorID("LILYGO");       // max 8 chars
+      MSC.productID("T-Dongle-S3"); // max 16 chars
+      MSC.productRevision("1.0");   // max 4 chars
+      MSC.onStartStop(onStartStop);
+      MSC.onRead(onRead);
+      MSC.onWrite(onWrite);
+      MSC.begin(card->csd.capacity, card->csd.sector_size);
+    #endif
+
+
   //file
     if(!SPIFFS.begin(true)){
       Serial.println("An Error has occurred while mounting SPIFFS");
@@ -718,6 +849,16 @@ void identifyCommand(char commandArray[50][20]){
                 //DELAY
                   case 2:{
                     vTaskDelay(atoi(commandArray[2]));
+                  break;}
+                //MSC
+                  case 3:{
+                    if(strcmp(commandArray[2],"on")==0){
+                      MSC.mediaPresent(true);
+                    }else if(strcmp(commandArray[2],"off")==0){
+                      MSC.mediaPresent(false);
+                    }else{
+                      inCom.noRec("MSC");
+                    }
                   break;}
                 
               }
