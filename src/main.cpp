@@ -132,6 +132,8 @@ void refreshTFT();
 bool espnowtryinit();
 bool usbTryInit();
 void identifyCommand(char commandArray[50][20]);
+void identifyCommand(String command);
+void identifyCommand(char command[200]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
 void strToMac(const char* str, uint8_t* mac);
@@ -278,6 +280,9 @@ USBHIDKeyboard Keyboard;
 
 
     };
+//
+
+
 void setup() {
   //init serial
     Serial.begin(115200);
@@ -318,18 +323,8 @@ void setup() {
       return;
     }
     //startup commands
-      if(SPIFFS.exists("/startupCommands.txt")){
-        fs::File startupCommands=SPIFFS.open("/startupCommands.txt");
-        while(startupCommands.available()){
-          String startCommand = startupCommands.readStringUntil('\n');
-          startCommand.trim();
-          inCom.println(startCommand);
-          inCom.parseCommandArray(startCommand,true);
-          identifyCommand(inCom.commandArray);
-          inCom.flush(false);
-        }
-        startupCommands.close();
-      }
+      identifyCommand("/run /startupCommands.txt");
+      identifyCommand("/run /SDstartupCommands.txt");     
   
 }
 
@@ -368,7 +363,14 @@ void loop() {
     }
   refreshTFT();
 }
-
+void identifyCommand(char command[200]){
+  String bufferString=command;
+  identifyCommand(bufferString);
+}
+void identifyCommand(String command){
+  inCom.parseCommandArray(command,false);
+  identifyCommand(inCom.commandArray);
+}
 void identifyCommand(char commandArray[50][20]){
   //find the command
     commandInt=inCom.multiComp(commandArray[0],commandIndex);
