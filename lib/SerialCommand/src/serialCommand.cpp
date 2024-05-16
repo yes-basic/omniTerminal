@@ -87,6 +87,7 @@ void serialCommand::flush(bool flushAll){
 void serialCommand::parseCommandArray(String inputCommandString,bool addons){
     int wordIndex = 0;
     int wordLength = 0;
+    flush(false);
     if(addons){
       while(strcmp(addonArray[wordIndex],"")){
         strcpy(commandArray[wordIndex],addonArray[wordIndex]);
@@ -120,7 +121,7 @@ int serialCommand::multiComp(char command[20],char staticArray[50][20]){
         if(!strcmp(command,staticArray[i])){if(debug){print("--multiComp (");print(command);print(") ");print(i);println("<found");}return i;}
         if(debug){print("--multiComp (");print(command);print(") ");println(i);}
     }
-    if(debug){print("--multiComp (");print(command);print(") -----not found----");}
+    if(debug){print("--multiComp (");print(command);println(") -----not found----");}
     return -1;
 }
 

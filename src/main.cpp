@@ -8,6 +8,9 @@
 #include <USB.h>
 #include <USBHIDKeyboard.h>
 #include "pin_config.h"
+#include "OneButton.h" // https://github.com/mathertel/OneButton
+
+OneButton button(BTN_PIN, true);
 
 
 serialCommand inCom;
@@ -134,6 +137,7 @@ bool usbTryInit();
 void identifyCommand(char commandArray[50][20]);
 void identifyCommand(String command);
 void identifyCommand(char command[200]);
+void identifyCommand(const char command[200]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
 void strToMac(const char* str, uint8_t* mac);
@@ -322,14 +326,20 @@ void setup() {
       Serial.println("An Error has occurred while mounting SPIFFS");
       return;
     }
+
     //startup commands
       identifyCommand("/run /startupCommands.txt");
-      identifyCommand("/run /SDstartupCommands.txt");     
-  
+      identifyCommand("/run /omniTerminalSYS/SDstartupCommands.txt");
+  button.attachClick([] {
+    inCom.clearCMD();
+    identifyCommand("/run /omniTerminalSYS/onButtonPress.txt");
+    inCom.reprintCMD();
+    });
 }
 
 
 void loop() {
+  button.tick();
   //check command
     if(inCom.check()){
       if(debug){inCom.println(inCom.commandString);}
@@ -363,14 +373,24 @@ void loop() {
     }
   refreshTFT();
 }
-void identifyCommand(char command[200]){
-  String bufferString=command;
-  identifyCommand(bufferString);
-}
-void identifyCommand(String command){
-  inCom.parseCommandArray(command,false);
-  identifyCommand(inCom.commandArray);
-}
+//identifyCommand processers
+  void identifyCommand(char command[200]){
+    String bufferString=command;
+    identifyCommand(bufferString);
+  }
+  void identifyCommand(const char command[200]){
+    String bufferString=command;
+    identifyCommand(bufferString);
+  }
+  void identifyCommand(String command){
+    command.trim();
+    inCom.parseCommandArray(command,false);
+    identifyCommand(inCom.commandArray);
+    inCom.flush(false);
+  }
+//
+
+
 void identifyCommand(char commandArray[50][20]){
   //find the command
     commandInt=inCom.multiComp(commandArray[0],commandIndex);
