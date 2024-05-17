@@ -26,8 +26,7 @@ class serialCommand
     int multiComp(char command[20],char staticArray[50][20]);
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
-    char addonArray[20][20];
-    char addonString[400];
+    omniCommand addons;
     char bufString[400];
     void compileCharArray(char array[][20],int rows,char *string[]);
     #ifdef USE_BTclassic

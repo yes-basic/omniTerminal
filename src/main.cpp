@@ -135,10 +135,10 @@ void refreshTFT();
 
 bool espnowtryinit();
 bool usbTryInit();
-void identifyCommand(char commandArray[50][20]);
-void identifyCommand(String command);
-void identifyCommand(char command[200]);
-void identifyCommand(const char command[200]);
+void identifyCommand(omniCommand command);
+void identifyCommand(String commandString);
+void identifyCommand(char commandChar[200]);
+void identifyCommand(const char commandChar[200]);
 String serialcommand(bool flush);
 bool isValidHex(const char* str);
 void strToMac(const char* str, uint8_t* mac);
@@ -329,13 +329,14 @@ void setup() {
     }
 
     //startup commands
-      identifyCommand("/run /startupCommands.txt");
-      identifyCommand("/run /omniTerminalSYS/SDstartupCommands.txt");
+      //identifyCommand("/run /startupCommands.txt");
+      //identifyCommand("/run /omniTerminalSYS/SDstartupCommands.txt");
   button.attachClick([] {
     inCom.clearCMD();
     identifyCommand("/run /omniTerminalSYS/onButtonPress.txt");
     inCom.reprintCMD();
     });
+  debug=1;
 }
 
 
@@ -345,57 +346,62 @@ void loop() {
     if(inCom.check()){
       if(debug){inCom.println(inCom.commandString);}
 
-      if(debug){
-        for (int i = 0; i < inCom.wordsInCommand; i++) {
-          inCom.print("Word ");
-          inCom.print(i);
-          inCom.print(": ");
-          inCom.print("\"");
-          inCom.print(inCom.commandArray[i]);
-          inCom.println("\"");
-        }
-      }
+      
       if(inCom.commandString.charAt(0)=='>'){
         inCom.commandString.remove(0,1);
-        inCom.parseCommandArray(inCom.commandString,false);
-        for(int i=0;i<=20;i++){
-          strcpy(inCom.addonArray[i],inCom.commandArray[i]);
-        }
+        inCom.addons.set(inCom.commandString);
       }else{
-        inCom.parseCommandArray(inCom.commandString,true);
-        identifyCommand(inCom.commandArray);
+        String command;
+        if(!inCom.addons.string.equals("")){
+          command =inCom.addons.string;
+          command.concat(" ");
+          command.concat(inCom.commandString);
+        }else{
+          command =inCom.commandString;
+        }
+        identifyCommand(command);
       }
       inCom.flush(true);
     }else if(strcmp(receivedCommand.c_str(),"")!=0){
-      inCom.parseCommandArray(receivedCommand,true);
+      String command =inCom.addons.string;
+      command.concat(" ");
+      command.concat(inCom.commandString);
       receivedCommand="";
-      identifyCommand(inCom.commandArray);
-      inCom.flush(false);
+      identifyCommand(command);
     }
   refreshTFT();
 }
 //identifyCommand processers
-  void identifyCommand(char command[200]){
-    String bufferString=command;
-    identifyCommand(bufferString);
+  void identifyCommand(char commandChar[200]){
+    omniCommand command(commandChar);
+    identifyCommand(command);
   }
-  void identifyCommand(const char command[200]){
-    String bufferString=command;
-    identifyCommand(bufferString);
+  void identifyCommand(const char commandChar[200]){
+    omniCommand command(commandChar);
+    identifyCommand(command);
   }
-  void identifyCommand(String command){
-    command.trim();
-    inCom.parseCommandArray(command,false);
-    identifyCommand(inCom.commandArray);
-    inCom.flush(false);
+  void identifyCommand(String commandString){
+    
+    omniCommand command(commandString);
+    identifyCommand(command);
   }
 //
 
 
-void identifyCommand(char commandArray[50][20]){
+void identifyCommand(omniCommand command){
+  if(debug){
+    for (int i = 0; i < command.wordCount; i++) {
+      inCom.print("Word ");
+      inCom.print(i);
+      inCom.print(": ");
+      inCom.print("\"");
+      inCom.print(command.wordArray[i]);
+      inCom.println("\"");
+    }
+  }
+  
   //find the command
-    commandInt=inCom.multiComp(commandArray[0],commandIndex);
-    
+    commandInt=inCom.multiComp(command.wordArray[0],commandIndex);
   //do the command
     switch(commandInt){
       //not recognized
@@ -423,23 +429,23 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //add
         case 2:{
-        if (inCom.isValidLong(commandArray[1])&&inCom.isValidLong(commandArray[2])){
-          inCom.print(atol(commandArray[1]));
+        if (inCom.isValidLong(command.wordArray[1])&&inCom.isValidLong(command.wordArray[2])){
+          inCom.print(atol(command.wordArray[1]));
           inCom.print("+");
-          inCom.print(atol(commandArray[2]));
+          inCom.print(atol(command.wordArray[2]));
           inCom.print("=");
-          inCom.println(atol(commandArray[1])+atol(commandArray[2]));
+          inCom.println(atol(command.wordArray[1])+atol(command.wordArray[2]));
         }else{
           inCom.println("not valid numbers");
           if(debug){
-            inCom.print(inCom.isValidLong(commandArray[1]));
-            inCom.println(inCom.isValidLong(commandArray[2]));
+            inCom.print(inCom.isValidLong(command.wordArray[1]));
+            inCom.println(inCom.isValidLong(command.wordArray[2]));
           }
         }
         break;}
       //IR
         case 3:{  
-          int index=inCom.multiComp(commandArray[1],IRprotocolIndex)+1;
+          int index=inCom.multiComp(command.wordArray[1],IRprotocolIndex)+1;
           if(index%2==0){index--;}
           if(debug){inCom.print("index:");inCom.println(index);}
           switch (index){
@@ -449,56 +455,56 @@ void identifyCommand(char commandArray[50][20]){
                 break;
             //main protocols
                 case 1:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendNEC(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendNEC(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 3:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendSony(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendSony(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 5:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendRC5(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendRC5(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 7:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendRC6(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendRC6(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 9:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendSharp(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendSharp(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 11:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendJVC(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendJVC(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 13:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendSamsung(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendSamsung(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 15:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendLG(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendLG(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 17:
                 inCom.println("protocol is WIP");
                 break;
                 case 19:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendPanasonic(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendPanasonic(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
                 case 21:
-                  if (inCom.isValidHex(commandArray[2])&&inCom.isValidHex(commandArray[3])){
-                    IrSender.sendDenon(strtol(commandArray[2],NULL,16),strtol(commandArray[3],NULL,16),0);
+                  if (inCom.isValidHex(command.wordArray[2])&&inCom.isValidHex(command.wordArray[3])){
+                    IrSender.sendDenon(strtol(command.wordArray[2],NULL,16),strtol(command.wordArray[3],NULL,16),0);
                   }
                 break;
             //enable reciever
@@ -507,7 +513,7 @@ void identifyCommand(char commandArray[50][20]){
                     delay(250);
                     if (IrReceiver.decode()) {
                       if (IrReceiver.decodedIRData.protocol == UNKNOWN) {
-                        if(!strcmp(commandArray[2],"all")){
+                        if(!strcmp(command.wordArray[2],"all")){
                           inCom.println(F("Received noise or an unknown (or not yet enabled) protocol"));
                           // We have an unknown protocol here, print extended info
                           IrReceiver.printIRResultRawFormatted(&Serial, true);
@@ -530,8 +536,8 @@ void identifyCommand(char commandArray[50][20]){
           }
 
           if(debug){
-              Serial.println(strtol(commandArray[2],NULL,16),HEX);
-              Serial.println(strtol(commandArray[3],NULL,16),HEX);
+              Serial.println(strtol(command.wordArray[2],NULL,16),HEX);
+              Serial.println(strtol(command.wordArray[3],NULL,16),HEX);
 
           }
 
@@ -541,20 +547,20 @@ void identifyCommand(char commandArray[50][20]){
       //bluetooth
         case 4:{
           #ifdef USE_BTclassic
-            switch (inCom.multiComp(commandArray[1],bluetoothIndex)){
+            switch (inCom.multiComp(command.wordArray[1],bluetoothIndex)){
               //command not recognized
                 case -1:{
                   inCom.noRec("BTclassic");
                 break;}
               //begin
                 case 0:{
-                  if(!strcmp(commandArray[2],"")){
+                  if(!strcmp(command.wordArray[2],"")){
                     inCom.SerialBT.begin("ESP32");
                     inCom.println("started bluetooth as: ESP32");
                   }else{
-                    inCom.SerialBT.begin(commandArray[2]);
+                    inCom.SerialBT.begin(command.wordArray[2]);
                     inCom.print("started bluetooth as: ");
-                    inCom.println(commandArray[2]);
+                    inCom.println(command.wordArray[2]);
                   }
                 break;}
               //end
@@ -568,7 +574,7 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //file
         case 5:{
-          switch (inCom.multiComp(commandArray[1],fileIndex))
+          switch (inCom.multiComp(command.wordArray[1],fileIndex))
           {
           //norec
             case -1:{
@@ -576,7 +582,7 @@ void identifyCommand(char commandArray[50][20]){
             break;}
           //open
             case 0:{
-            file = SPIFFS.open(commandArray[2]);
+            file = SPIFFS.open(command.wordArray[2]);
             if(!file){
               inCom.println("Failed to open file for reading");
               return;
@@ -601,7 +607,7 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //espnow
         case 6:{
-          switch (inCom.multiComp(commandArray[1],espnowIndex))
+          switch (inCom.multiComp(command.wordArray[1],espnowIndex))
           {
             //not recognized 
               case -1:{
@@ -612,11 +618,11 @@ void identifyCommand(char commandArray[50][20]){
               case 0:{
                 // test address:    12:34:56:78:9A:BC
                 if(espnowtryinit()){
-                  if(inCom.isValidLong(commandArray[2])&&(atol(commandArray[2])%1)==0&& !(atol(commandArray[2])>peerNumber)){
+                  if(inCom.isValidLong(command.wordArray[2])&&(atol(command.wordArray[2])%1)==0&& !(atol(command.wordArray[2])>peerNumber)){
                     
-                    int peerArrayTGT=atol(commandArray[2]);
+                    int peerArrayTGT=atol(command.wordArray[2]);
                     uint8_t address[6];
-                    strToMac(commandArray[3],address);
+                    strToMac(command.wordArray[3],address);
                     //uint8_t mac[] = {0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC};
 
                     // Populate the peerInfo structure
@@ -641,8 +647,8 @@ void identifyCommand(char commandArray[50][20]){
             //tgt
               case 1:{
                 if(espnowtryinit()){
-                  if(inCom.isValidLong(commandArray[2])&&(atol(commandArray[2])%1)==0&& !(atol(commandArray[2])>peerNumber)){
-                  espnowTGT=atoi(commandArray[2]);
+                  if(inCom.isValidLong(command.wordArray[2])&&(atol(command.wordArray[2])%1)==0&& !(atol(command.wordArray[2])>peerNumber)){
+                  espnowTGT=atoi(command.wordArray[2]);
                   inCom.print("Target set to:  (");
                   inCom.print(espnowTGT);
                   inCom.print(")  ");
@@ -669,14 +675,14 @@ void identifyCommand(char commandArray[50][20]){
             //send
               case 3:{
                 if(espnowtryinit()){
-                  strcpy(espnowMessage.command,commandArray[2]);
+                  strcpy(espnowMessage.command,command.wordArray[2]);
                   for(int i=0;i<9;i++){
-                    if(strcmp(commandArray[i+3],"")){
+                    if(strcmp(command.wordArray[i+3],"")){
                       strcat(espnowMessage.command," ");
-                      strcat(espnowMessage.command,commandArray[i+3]);
+                      strcat(espnowMessage.command,command.wordArray[i+3]);
                     }
 
-                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(commandArray[i+2]);}
+                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(command.wordArray[i+2]);}
                   }
                   if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
 
@@ -689,18 +695,18 @@ void identifyCommand(char commandArray[50][20]){
             //receive
               case 4:{
                 if(espnowtryinit()){
-                  if(strcmp(commandArray[2],"none")==0){
+                  if(strcmp(command.wordArray[2],"none")==0){
                     espnowReceiveSet=0;
                     esp_now_unregister_recv_cb();
                     inCom.println("receive set to none");
                     
                   }
-                  if(strcmp(commandArray[2],"silent")==0){
+                  if(strcmp(command.wordArray[2],"silent")==0){
                     espnowReceiveSet=1;
                     esp_now_register_recv_cb(OnDataRecv);
                     inCom.println("receive set to silent");
                   }
-                  if(strcmp(commandArray[2],"full")==0){
+                  if(strcmp(command.wordArray[2],"full")==0){
                     espnowReceiveSet=2;
                     esp_now_register_recv_cb(OnDataRecv);
                     inCom.println("receive set to full");
@@ -721,14 +727,14 @@ void identifyCommand(char commandArray[50][20]){
             //cmd
               case 7:{
                 if(espnowtryinit()){
-                  strcpy(espnowMessage.command,commandArray[2]);
+                  strcpy(espnowMessage.command,command.wordArray[2]);
                   for(int i=0;i<9;i++){
-                    if(strcmp(commandArray[i+3],"")){
+                    if(strcmp(command.wordArray[i+3],"")){
                       strcat(espnowMessage.command," ");
-                      strcat(espnowMessage.command,commandArray[i+3]);
+                      strcat(espnowMessage.command,command.wordArray[i+3]);
                     }
 
-                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(commandArray[i+2]);}
+                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(command.wordArray[i+2]);}
                   }
                   if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
 
@@ -739,7 +745,7 @@ void identifyCommand(char commandArray[50][20]){
               break;}
             //pair
               case 8:{
-                if(!strcmp(commandArray[2],"")){
+                if(!strcmp(command.wordArray[2],"")){
                   if(espnowtryinit()){
                     inCom.registerSendFunction(mainSendFunction);
                     // Populate the peerInfo structure
@@ -752,7 +758,7 @@ void identifyCommand(char commandArray[50][20]){
                   
                       
                   }
-                }else if(!strcmp(commandArray[2],"off")){
+                }else if(!strcmp(command.wordArray[2],"off")){
                   inCom.unregisterSendFunction();
                 }else {
                   inCom.noRec("pair");
@@ -769,20 +775,19 @@ void identifyCommand(char commandArray[50][20]){
                 return;
               }
               
-              if(SPIFFS.exists(commandArray[1])){
-                fs::File runFile=SPIFFS.open(commandArray[1]);
+              if(SPIFFS.exists(command.wordArray[1])){
+                fs::File runFile=SPIFFS.open(command.wordArray[1]);
                 while(runFile.available()){
                   String startCommand = runFile.readStringUntil('\n');
                   startCommand.trim();
                   inCom.println(startCommand);
-                  inCom.parseCommandArray(startCommand,false);
-                  identifyCommand(inCom.commandArray);
+                  identifyCommand(startCommand);
                   inCom.flush(false);
                 }
                 runFile.close();
               }else{
                 char fileLocation[30]="/sdcard";
-                strcat(fileLocation,commandArray[1]);
+                strcat(fileLocation,command.wordArray[1]);
                 FILE *SDrunFile = fopen(fileLocation,"r");
                 if(SDrunFile!=NULL){
                   char buffer[256];
@@ -791,9 +796,8 @@ void identifyCommand(char commandArray[50][20]){
                       String bufferString=buffer;
                       bufferString.trim();
                       inCom.println(bufferString);
-                      inCom.parseCommandArray(bufferString,false);
-                      identifyCommand(inCom.commandArray);
-                      inCom.flush(false);
+                      
+                      identifyCommand(bufferString);
                   }
                   fclose(SDrunFile);
                 }else{
@@ -838,22 +842,22 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //usb
         case 9:{
-          if(strcmp(commandArray[1],"deinit")==0){
+          if(strcmp(command.wordArray[1],"deinit")==0){
             Keyboard.end();
             usbInit=false;
           }else{
             if(usbTryInit()){
-              switch (inCom.multiComp(commandArray[1],usbIndex))
+              switch (inCom.multiComp(command.wordArray[1],usbIndex))
               {
                 //norec
                   case -1:{
                     
-                    for(int i=1;strcmp(commandArray[i],"");i++){
-                      switch (inCom.multiComp(commandArray[i],usbModkeyIndex)){
+                    for(int i=1;strcmp(command.wordArray[i],"");i++){
+                      switch (inCom.multiComp(command.wordArray[i],usbModkeyIndex)){
                         //single char/ norec
                           case -1:{
-                            if(strlen(commandArray[i])==1){
-                              Keyboard.press(commandArray[i][0]);
+                            if(strlen(command.wordArray[i])==1){
+                              Keyboard.press(command.wordArray[i][0]);
                             }else{
                               inCom.noRec("usb");
                             }
@@ -886,11 +890,11 @@ void identifyCommand(char commandArray[50][20]){
                 //STRING
                   case 0:{
                     char USBsendString[200];
-                    strcpy(USBsendString,commandArray[2]);
+                    strcpy(USBsendString,command.wordArray[2]);
                     for(int i=0;i<20;i++){
-                      if(strcmp(commandArray[i+3],"")){
+                      if(strcmp(command.wordArray[i+3],"")){
                         strcat(USBsendString," ");
-                        strcat(USBsendString,commandArray[i+3]);
+                        strcat(USBsendString,command.wordArray[i+3]);
                       }
                     }
                     Keyboard.print(USBsendString);
@@ -899,11 +903,11 @@ void identifyCommand(char commandArray[50][20]){
                   case 1:{
                     /*
                     char USBsendString[200];
-                    strcpy(USBsendString,commandArray[2]);
+                    strcpy(USBsendString,command.wordArray[2]);
                     for(int i=0;i<20;i++){
-                      if(strcmp(commandArray[i+3],"")){
+                      if(strcmp(command.wordArray[i+3],"")){
                         strcat(USBsendString," ");
-                        strcat(USBsendString,commandArray[i+3]);
+                        strcat(USBsendString,command.wordArray[i+3]);
                       }
                     }
                     inCom.println(USBsendString);
@@ -911,13 +915,13 @@ void identifyCommand(char commandArray[50][20]){
                   break;}
                 //DELAY
                   case 2:{
-                    vTaskDelay(atoi(commandArray[2]));
+                    vTaskDelay(atoi(command.wordArray[2]));
                   break;}
                 //MSC
                   case 3:{
-                    if(strcmp(commandArray[2],"on")==0){
+                    if(strcmp(command.wordArray[2],"on")==0){
                       MSC.mediaPresent(true);
-                    }else if(strcmp(commandArray[2],"off")==0){
+                    }else if(strcmp(command.wordArray[2],"off")==0){
                       MSC.mediaPresent(false);
                     }else{
                       inCom.noRec("MSC");

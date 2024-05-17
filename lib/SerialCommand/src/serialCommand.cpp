@@ -84,13 +84,13 @@ void serialCommand::flush(bool flushAll){
 }
 
 
-void serialCommand::parseCommandArray(String inputCommandString,bool addons){
+void serialCommand::parseCommandArray(String inputCommandString,bool addonsbool){
     int wordIndex = 0;
     int wordLength = 0;
     flush(false);
-    if(addons){
-      while(strcmp(addonArray[wordIndex],"")){
-        strcpy(commandArray[wordIndex],addonArray[wordIndex]);
+    if(addonsbool){
+      while(strcmp(addons.wordArray[wordIndex],"")){
+        strcpy(commandArray[wordIndex],addons.wordArray[wordIndex]);
         wordIndex++;
       }
     }
@@ -192,15 +192,15 @@ void serialCommand::clearCMD(){
   #endif
 }
 void serialCommand::reprintCMD(){
-    strcpy(addonString,userColor);
-    strcat(addonString,addonArray[0]);
+    strcpy(addons.charArray,userColor);
+    strcat(addons.charArray,addons.wordArray[0]);
   for(int i=0;i<19;i++){
-    if(strcmp(addonArray[i+1],"")){
-      strcat(addonString," ");
-      strcat(addonString,addonArray[i+1]);
+    if(strcmp(addons.wordArray[i+1],"")){
+      strcat(addons.charArray," ");
+      strcat(addons.charArray,addons.wordArray[i+1]);
     } 
   }
-  Serial.print(addonString);
+  Serial.print(addons.charArray);
   Serial.print(">>");
   Serial.print(commandString);
   #ifdef USE_BTclassic
