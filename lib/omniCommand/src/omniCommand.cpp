@@ -21,7 +21,7 @@ void omniCommand::clear(){
     for(int i=0;i<50;i++){
       strcpy(wordArray[i],"");
     }
-
+    wordVector.clear();
     wordCount=0;
     letterCount=0;
 }
@@ -49,15 +49,16 @@ void omniCommand::set(String inputString){
       // Break if we have reached the maximum number of words
       if (wordIndex >= sizeof(wordArray)/sizeof(wordArray[0])) {
           //println("command array overflow");
-          //break;
+          break;
       }
 
   }
   wordArray[wordIndex][wordLength] = '\0';  // Null-terminate the word
   wordLength = 0;  // Reset word length for next word
 
-  wordCount=wordIndex+1;
+ 
   letterCount=string.length();
+  makeVector();
 }
 void omniCommand::set(char inputCharArray[200]){
   clear();
@@ -82,7 +83,7 @@ void omniCommand::set(char inputCharArray[200]){
       // Break if we have reached the maximum number of words
       if (wordIndex >= sizeof(wordArray)/sizeof(wordArray[0])) {
           //println("command array overflow");
-          //break;
+          break;
       }
 
   }
@@ -90,8 +91,9 @@ void omniCommand::set(char inputCharArray[200]){
   wordArray[wordIndex][wordLength] = '\0';  // Null-terminate the word
   wordLength = 0;  // Reset word length for next word
 
-  wordCount=wordIndex+1;
+  
   letterCount=string.length();
+  makeVector();
 }
 
 void omniCommand::set(char inputWordArray[20][50]){
@@ -114,4 +116,28 @@ void omniCommand::set(char inputWordArray[20][50]){
   }
   string=charArray;
   letterCount=string.length();
+  makeVector();
+}
+
+void omniCommand::makeVector(){
+
+  int wordIndex = 0;
+  
+  wordVector.push_back("");
+  for (int i = 0; i < string.length(); i++) {
+      char c = string.charAt(i);
+
+      // If current character is not a space, add it to current word
+      if (c != ' ' && c != '\0') {
+          wordVector[wordIndex] += c;
+      } else {
+          wordIndex++;
+          wordVector.push_back("");
+      }
+
+
+  }
+  //wordArray[wordIndex][wordLength] = '\0';  // Null-terminate the word
+  //wordLength = 0;  // Reset word length for next word
+ wordCount=wordVector.size();
 }

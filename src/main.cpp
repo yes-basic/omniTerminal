@@ -829,6 +829,10 @@ void identifyCommand(char commandArray[50][20]){
 
           }
 
+          for (int i=0;i<testCommand.wordVector.size();i++) {
+            inCom.println(testCommand.wordVector[i].c_str());
+          }
+
           
 
         break;}
