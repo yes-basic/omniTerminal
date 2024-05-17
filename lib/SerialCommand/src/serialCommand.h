@@ -7,6 +7,7 @@
   #include "BluetoothSerial.h"
 #endif
 #include "SPIFFS.h"
+#include <omniCommand.h>
 
 
 class serialCommand

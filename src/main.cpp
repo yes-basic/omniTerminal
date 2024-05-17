@@ -10,6 +10,7 @@
 #include "pin_config.h"
 #include "OneButton.h" // https://github.com/mathertel/OneButton
 
+
 OneButton button(BTN_PIN, true);
 
 
@@ -803,39 +804,33 @@ void identifyCommand(char commandArray[50][20]){
         break;}
       //test
         case 8:{
-          FILE *thing = fopen("/sdcard/hello.txt","r");
-          if(thing!=NULL){
-            char buffer[256];
-            // Read and print contents line by line
-            while (fgets(buffer, sizeof(buffer), thing) != NULL) {
-                inCom.println(buffer);
-            }
-            fclose(thing);
-          }else{
-            inCom.println("file not found");
+          omniCommand testCommand;
+          inCom.commandString.trim();
+          testCommand.set(inCom.commandString);
+          inCom.println(testCommand.charArray);
+          inCom.println(testCommand.string);
+          inCom.println(testCommand.wordCount);
+          inCom.println(testCommand.letterCount);
+          for(int i=0;i<testCommand.wordCount;i++){
+            inCom.print(i);
+            inCom.println(testCommand.wordArray[i]);
           }
-          /*
-            DIR *dir = opendir("/sdcard");
-            
-            if (dir == NULL) {
-                inCom.println("Failed to open directory");
-                return;
-            }
+          
+          for(int i=0;i<testCommand.wordCount;i++){
+            inCom.println(i);
 
-            struct dirent *entry;
-
-            
-            while ((entry = readdir(dir)) != NULL) {
-                if (entry->d_type == DT_REG) {
-                    inCom.print("File: ");
-                    inCom.println(entry->d_name);
-                } else if (entry->d_type == DT_DIR) {
-                    inCom.print("Directory: ");
-                    inCom.println(entry->d_name);
-                }
+            for(int f=0;f<20;f++){
+              inCom.print(" ");
+              inCom.print((int)testCommand.wordArray[i][f]);
             }
-            closedir(dir);
-            */
+            inCom.println();
+
+
+
+          }
+
+          
+
         break;}
       //usb
         case 9:{
