@@ -11,9 +11,12 @@ class omniCommand
     omniCommand(char inputCharArray[200]);
     omniCommand(char inputWordArray[20][50]);
 
+    void clear();
+
     void set(String inputString);
     void set(char inputCharArray[200]);
     void set(char inputWordArray[20][50]);
+    
 
     String string;
     char charArray[200];

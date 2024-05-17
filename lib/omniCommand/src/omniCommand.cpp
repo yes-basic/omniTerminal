@@ -15,7 +15,19 @@ omniCommand::omniCommand(char inputWordArray[20][50]){
 set(inputWordArray);
 }
 
+void omniCommand::clear(){
+    string="";
+    strcpy(charArray,"");
+    for(int i=0;i<50;i++){
+      strcpy(wordArray[i],"");
+    }
+
+    wordCount=0;
+    letterCount=0;
+}
+
 void omniCommand::set(String inputString){
+  clear();
   string=inputString;
   strcpy(charArray,string.c_str());
 
@@ -48,6 +60,7 @@ void omniCommand::set(String inputString){
   letterCount=string.length();
 }
 void omniCommand::set(char inputCharArray[200]){
+  clear();
   string=inputCharArray;
   strcpy(charArray,inputCharArray);
 
@@ -82,6 +95,7 @@ void omniCommand::set(char inputCharArray[200]){
 }
 
 void omniCommand::set(char inputWordArray[20][50]){
+  clear();
   for(int i=0;i<50;i++){
     strcpy(wordArray[i],inputWordArray[i]);
   }
