@@ -21,12 +21,12 @@ class serialCommand
     void parseCommandArray(String inputCommandString,bool addons);
     char commandArray[20][20];
     String commandString;
+    String addonString;
     int wordsInCommand;
     int multiComp(char command[20],char staticArray[50][20]);
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
     char addonArray[20][20];
-    char addonString[400];
     char bufString[400];
     void compileCharArray(char array[][20],int rows,char *string[]);
     #ifdef USE_BTclassic

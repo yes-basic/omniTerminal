@@ -192,15 +192,15 @@ void serialCommand::clearCMD(){
   #endif
 }
 void serialCommand::reprintCMD(){
-    strcpy(addonString,userColor);
-    strcat(addonString,addonArray[0]);
-  for(int i=0;i<19;i++){
-    if(strcmp(addonArray[i+1],"")){
-      strcat(addonString," ");
-      strcat(addonString,addonArray[i+1]);
-    } 
-  }
-  Serial.print(addonString);
+    String addonBuf=userColor+addonString;
+    //strcat(addonString,addonArray[0]);
+  //for(int i=0;i<19;i++){
+  //  if(strcmp(addonArray[i+1],"")){
+  //    strcat(addonString," ");
+  //    strcat(addonString,addonArray[i+1]);
+  //  } 
+  //}
+  Serial.print(addonBuf);
   Serial.print(">>");
   Serial.print(commandString);
   #ifdef USE_BTclassic

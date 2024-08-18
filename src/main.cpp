@@ -176,6 +176,7 @@ USBHIDKeyboard Keyboard;
   const char white[15]="\033[37m";
   
 //init misc var
+  String fullCommandString;
   char breakChar='a';
   long millisLastRefresh;
   int wordReturn=1;
@@ -356,20 +357,18 @@ void loop() {
       }
       if(inCom.commandString.charAt(0)=='>'){
         inCom.commandString.remove(0,1);
-        inCom.parseCommandArray(inCom.commandString,false);
-        for(int i=0;i<=20;i++){
-          strcpy(inCom.addonArray[i],inCom.commandArray[i]);
-        }
+        inCom.addonString=inCom.commandString;
       }else{
-        inCom.parseCommandArray(inCom.commandString,true);
-        identifyCommand(inCom.commandArray);
+        fullCommandString=inCom.addonString+" "+inCom.commandString;
+        fullCommandString.trim();
+        identifyCommand(fullCommandString);
       }
       inCom.flush(true);
     }else if(strcmp(receivedCommand.c_str(),"")!=0){
-      inCom.parseCommandArray(receivedCommand,true);
+      String receivedCommandBuf=inCom.addonString+" "+receivedCommand;
       receivedCommand="";
-      identifyCommand(inCom.commandArray);
-      inCom.flush(false);
+      receivedCommandBuf.trim();
+      identifyCommand(receivedCommandBuf);
     }
   refreshTFT();
 }
@@ -774,8 +773,7 @@ void identifyCommand(char commandArray[50][20]){
                   String startCommand = runFile.readStringUntil('\n');
                   startCommand.trim();
                   inCom.println(startCommand);
-                  inCom.parseCommandArray(startCommand,false);
-                  identifyCommand(inCom.commandArray);
+                  identifyCommand(startCommand);
                   inCom.flush(false);
                 }
                 runFile.close();
@@ -789,9 +787,8 @@ void identifyCommand(char commandArray[50][20]){
                   while (fgets(buffer, sizeof(buffer), SDrunFile) != NULL) {
                       String bufferString=buffer;
                       bufferString.trim();
-                      inCom.println(bufferString);
-                      inCom.parseCommandArray(bufferString,false);
-                      identifyCommand(inCom.commandArray);
+                      inCom.println(bufferString,green);
+                      identifyCommand(bufferString);
                       inCom.flush(false);
                   }
                   fclose(SDrunFile);
