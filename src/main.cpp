@@ -132,6 +132,7 @@ serialCommand inCom;
 
 void refreshTFT(); 
 
+String vc(std::vector<String> vector,int index);
 bool espnowtryinit();
 bool usbTryInit();
 void identifyCommand(char commandArray[50][20]);
@@ -441,7 +442,7 @@ void identifyCommand(String command){
 
   
   //find the command
-    commandInt=inCom.multiComp(commandArray[0],commandIndex);
+    commandInt=inCom.multiComp(vc(commandVector,0),commandIndex);
     
   //do the command
     switch(commandInt){
@@ -1085,5 +1086,13 @@ void mainSendFunction(char command[200],int msgID){
   esp_err_t result;
   result= esp_now_send( peerInfoArray[9].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
   if(debug){Serial.println(esp_err_to_name(result));}
+}
+String vc(std::vector<String> vector,int index){
+  if(vector.size()>index){
+    return vector.at(index);
+  }else{
+    if(debug){inCom.println("vector check failed!",red);}
+    return"";
+  }
 }
 

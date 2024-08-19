@@ -125,6 +125,16 @@ int serialCommand::multiComp(char command[20],char staticArray[50][20]){
     return -1;
 }
 
+int serialCommand::multiComp(String command,char staticArray[50][20]){
+    int staticArrayWords=50;
+    for(int i=0;i<staticArrayWords;i++){
+        if(!strcmp(command.c_str(),staticArray[i])){if(debug){print("--multiComp (");print(command);print(") ");print(i);println("<found");}return i;}
+        if(debug){print("--multiComp (");print(command);print(") ");println(i);}
+    }
+    if(debug){print("--multiComp (");print(command);println(") -----not found----");}
+    return -1;
+}
+
 bool serialCommand::isValidLong(char* str) {
   // Check if the string is empty
   if (strlen(str) == 0) {

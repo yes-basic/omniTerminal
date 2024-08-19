@@ -24,6 +24,7 @@ class serialCommand
     String addonString;
     int wordsInCommand;
     int multiComp(char command[20],char staticArray[50][20]);
+    int multiComp(String command,char staticArray[50][20]);
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
     char addonArray[20][20];
