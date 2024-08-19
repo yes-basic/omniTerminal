@@ -9,7 +9,7 @@
 #include <USBHIDKeyboard.h>
 #include "pin_config.h"
 #include "OneButton.h" // https://github.com/mathertel/OneButton
-
+#include <vector>
 OneButton button(BTN_PIN, true);
 
 
@@ -299,7 +299,7 @@ void setup() {
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
   #endif
-  
+  debug=true;
   //init ir
     #ifdef IR_RECEIVE_PIN_MOD
       IrReceiver.begin(IR_RECEIVE_PIN_MOD,false);
@@ -381,16 +381,65 @@ void loop() {
     String bufferString=command;
     identifyCommand(bufferString);
   }
+  /*
   void identifyCommand(String command){
     command.trim();
     inCom.parseCommandArray(command,false);
     identifyCommand(inCom.commandArray);
     inCom.flush(false);
   }
+  */
 //
 
 
-void identifyCommand(char commandArray[50][20]){
+void identifyCommand(String command){
+  //make legacy and extra command variables
+    int commandWordCount = 0;
+    int wordLength = 0;
+    char commandArray[50][20];
+    for (int k = 0; k <sizeof(commandArray)/sizeof(commandArray[0]); k++) {
+      for (int j = 0; j < sizeof(commandArray[0]); j++) {
+        commandArray[k][j] = '\0';  // Set each character to null
+      }
+    }
+    bool legacyPossible=true;
+    std::vector<String> commandVector;
+    String vectorBuilderWordBuf;
+    //create command vector
+      for (int i = 0; i < command.length(); i++) {
+        char c = command.charAt(i);
+        // If current character is not a space, add it to current word
+        if (c != ' ' && c != '\0') {
+          if(legacyPossible){commandArray[commandWordCount][wordLength] = c;}
+          vectorBuilderWordBuf += c;
+          wordLength++;
+        } else {
+          if(legacyPossible){commandArray[commandWordCount][wordLength] = '\0';}
+          commandVector.push_back(vectorBuilderWordBuf);
+          vectorBuilderWordBuf="";
+          commandWordCount++;
+          wordLength = 0;  // Reset word length for next word
+        }
+        
+
+          // Break if we have reached the maximum number of words
+            if (commandWordCount >= sizeof(commandArray)/sizeof(commandArray[0])||wordLength>=sizeof(commandArray[0])) {
+              if(debug&&legacyPossible){
+                inCom.println("command is legacy incompatable!");
+              }
+              for (int k = 0; k <sizeof(commandArray)/sizeof(commandArray[0]); k++) {
+                for (int j = 0; j < sizeof(commandArray[0]); j++) {
+                  commandArray[k][j] = '\0';  // Set each character to null
+                }
+              }
+              legacyPossible=false;
+            }
+
+      }
+      commandWordCount++;
+      if(!vectorBuilderWordBuf.isEmpty()){commandVector.push_back(vectorBuilderWordBuf);}
+
+  
   //find the command
     commandInt=inCom.multiComp(commandArray[0],commandIndex);
     
