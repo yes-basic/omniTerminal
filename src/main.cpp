@@ -945,17 +945,8 @@ void identifyCommand(String command){
                   break;}
                 //REM
                   case 1:{
-                    /*
-                    char USBsendString[200];
-                    strcpy(USBsendString,commandArray[2]);
-                    for(int i=0;i<20;i++){
-                      if(strcmp(commandArray[i+3],"")){
-                        strcat(USBsendString," ");
-                        strcat(USBsendString,commandArray[i+3]);
-                      }
-                    }
-                    inCom.println(USBsendString);
-                    */
+                    inCom.println(command.substring(9));
+                    
                   break;}
                 //DELAY
                   case 2:{
@@ -963,13 +954,17 @@ void identifyCommand(String command){
                   break;}
                 //MSC
                   case 3:{
-                    if(strcmp(commandArray[2],"on")==0){
-                      MSC.mediaPresent(true);
-                    }else if(strcmp(commandArray[2],"off")==0){
-                      MSC.mediaPresent(false);
-                    }else{
-                      inCom.noRec("MSC");
-                    }
+                    #ifdef USE_SD_MMC
+                      if(strcmp(commandArray[2],"on")==0){
+                        MSC.mediaPresent(true);
+                      }else if(strcmp(commandArray[2],"off")==0){
+                        MSC.mediaPresent(false);
+                      }else{
+                        inCom.noRec("MSC");
+                      }
+                    #else
+                      inCom.println("SD_MMC is disabled for this device!",red);
+                    #endif
                   break;}
                 
               }

@@ -1,1 +1,1 @@
-phase out addon array for addonstring
+update environments for omnidrive 2 and xiao
