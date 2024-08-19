@@ -331,7 +331,7 @@ void setup() {
 
     //startup commands
       identifyCommand("/run /startupCommands.txt");
-      identifyCommand("/run /omniTerminalSYS/SDstartupCommands.txt");
+      //identifyCommand("/run /omniTerminalSYS/SDstartupCommands.txt");
   button.attachClick([] {
     inCom.clearCMD();
     identifyCommand("/run /omniTerminalSYS/onButtonPress.txt");
@@ -813,12 +813,12 @@ void identifyCommand(String command){
         case 7:{
             //file
               if(!SPIFFS.begin(true)){
-                Serial.println("An Error has occurred while mounting SPIFFS");
+                inCom.println("An Error has occurred while mounting SPIFFS");
                 return;
               }
               
-              if(SPIFFS.exists(commandArray[1])){
-                fs::File runFile=SPIFFS.open(commandArray[1]);
+              if(SPIFFS.exists(vc(commandVector,1).c_str())){
+                fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
                 while(runFile.available()){
                   String startCommand = runFile.readStringUntil('\n');
                   startCommand.trim();
@@ -828,9 +828,8 @@ void identifyCommand(String command){
                 }
                 runFile.close();
               }else{
-                char fileLocation[30]="/sdcard";
-                strcat(fileLocation,commandArray[1]);
-                FILE *SDrunFile = fopen(fileLocation,"r");
+                String fileLocation="/sdcard"+vc(commandVector,1);        
+                FILE *SDrunFile = fopen(fileLocation.c_str(),"r");
                 if(SDrunFile!=NULL){
                   char buffer[256];
                   // Read and print contents line by line
@@ -843,7 +842,8 @@ void identifyCommand(String command){
                   }
                   fclose(SDrunFile);
                 }else{
-                  inCom.println("file not found",red);
+                  inCom.print("file not found at: ",red);
+                  inCom.println(vc(commandVector,1),red);
                 }
               }
                 
