@@ -189,9 +189,12 @@ USBHIDKeyboard Keyboard;
   typedef struct struct_message {
     char command[200];
     int msgID;
+    int msgOrder;
   } struct_message;
   struct_message espnowMessage;
   struct_message espnowRecieved;
+  int espnowmsgOrderLast=-1;
+  String espnowCompiledMsg;
   bool espnowInit=false;
   const int peerNumber=10;
   uint8_t peerAddress[peerNumber][6];
@@ -300,7 +303,6 @@ void setup() {
     img.createSprite(240, 135);
     img.fillSprite(TFT_BLACK);
   #endif
-  debug=true;
   //init ir
     #ifdef IR_RECEIVE_PIN_MOD
       IrReceiver.begin(IR_RECEIVE_PIN_MOD,false);
@@ -649,7 +651,7 @@ void identifyCommand(String command){
         break;}
       //espnow
         case 6:{
-          switch (inCom.multiComp(commandArray[1],espnowIndex))
+          switch (inCom.multiComp(vc(commandVector,1),espnowIndex))
           {
             //not recognized 
               case -1:{
@@ -717,20 +719,47 @@ void identifyCommand(String command){
             //send
               case 3:{
                 if(espnowtryinit()){
-                  strcpy(espnowMessage.command,commandArray[2]);
-                  for(int i=0;i<9;i++){
-                    if(strcmp(commandArray[i+3],"")){
-                      strcat(espnowMessage.command," ");
-                      strcat(espnowMessage.command,commandArray[i+3]);
-                    }
-
-                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(commandArray[i+2]);}
-                  }
-                  if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
-
+                  
                   espnowMessage.msgID=1;
-                  esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
-                  if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                  espnowMessage.msgOrder=0;
+
+                  if(command.length()-13<=200){
+                    strcpy(espnowMessage.command,command.substring(13).c_str());
+                        
+                    espnowMessage.msgOrder=-2;
+                    esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                    if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                    inCom.print("<single> ", green);
+                    inCom.println(espnowMessage.command);
+                    inCom.println();
+                  }else{
+                    for(int i=command.length()-13;i>=0;){
+                      espnowMessage.msgID=1;
+                      if(i<200){
+                        strcpy(espnowMessage.command,command.substring(command.length()-i).c_str());
+                        
+                        espnowMessage.msgOrder=-1;
+                        esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                        if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                        inCom.print("<closer> ", green);
+                        inCom.println(espnowMessage.command);
+                        inCom.println();
+                        i=-1;
+                      }else{
+                        strcpy(espnowMessage.command,command.substring(command.length()-i,command.length()-i+200).c_str());
+                        i=i-200;
+                        
+                        esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                        if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                        inCom.println("< ", green);
+                        inCom.print(espnowMessage.msgOrder, green);
+                        inCom.print("> ", green);
+                        inCom.println(espnowMessage.command,yellow);
+                        espnowMessage.msgOrder=espnowMessage.msgOrder+1;
+                      }
+                    }
+                  }
+
                 }
               break;}
 
@@ -769,20 +798,46 @@ void identifyCommand(String command){
             //cmd
               case 7:{
                 if(espnowtryinit()){
-                  strcpy(espnowMessage.command,commandArray[2]);
-                  for(int i=0;i<9;i++){
-                    if(strcmp(commandArray[i+3],"")){
-                      strcat(espnowMessage.command," ");
-                      strcat(espnowMessage.command,commandArray[i+3]);
-                    }
-
-                    if(debug){inCom.print("--command");inCom.print(i);inCom.print("  ");inCom.println(commandArray[i+2]);}
-                  }
-                  if(debug){inCom.print("command compiled: "); inCom.println(espnowMessage.command);}
-
                   espnowMessage.msgID=2;
-                  esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
-                  if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                  espnowMessage.msgOrder=0;
+
+                  if(command.length()-12<=200){
+                    strcpy(espnowMessage.command,command.substring(12).c_str());
+                        
+                    espnowMessage.msgOrder=-2;
+                    esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                    if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                    inCom.print("<single> ", green);
+                    inCom.println(espnowMessage.command);
+                    inCom.println();
+                  }else{
+                    for(int i=command.length()-12;i>=0;){
+                      espnowMessage.msgID=2;
+                      if(i<200){
+                        strcpy(espnowMessage.command,command.substring(command.length()-i).c_str());
+                        
+                        espnowMessage.msgOrder=-1;
+                        esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                        if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                        inCom.print("<closer> ", green);
+                        inCom.println(espnowMessage.command);
+                        inCom.println();
+                        i=-1;
+                      }else{
+                        strcpy(espnowMessage.command,command.substring(command.length()-i,command.length()-i+200).c_str());
+                        i=i-200;
+                        
+                        esp_err_t result=esp_now_send( peerInfoArray[espnowTGT].peer_addr, (uint8_t *) &espnowMessage, sizeof(espnowMessage));
+                        if(debug){inCom.print("--send result:  "); inCom.println(esp_err_to_name(result));}
+                        inCom.println("< ", green);
+                        inCom.print(espnowMessage.msgOrder, green);
+                        inCom.print("> ", green);
+                        inCom.println(espnowMessage.command,yellow);
+                        espnowMessage.msgOrder=espnowMessage.msgOrder+1;
+                      }
+                    }
+                  }
+
                 }
               break;}
             //pair
@@ -1051,20 +1106,66 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&espnowRecieved, incomingData, sizeof(espnowRecieved));
   memcpy(lastReceivedMac,mac,6);
-  if(espnowReceiveSet==2){
-    if(espnowRecieved.msgID==0){
-      inCom.print(espnowRecieved.command);
-    }else{
-      char recBufChar[230];
-      sprintf(recBufChar,"~espnow {%02X:%02X:%02X:%02X:%02X:%02X ID:%d}---- %s"
-      ,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],espnowRecieved.msgID,espnowRecieved.command);
-      inCom.println(recBufChar);
+  if(debug){
+    inCom.print(espnowRecieved.msgOrder);
+    inCom.print("  ");
+    inCom.println(espnowRecieved.msgID,cyan);
+  }
+  if(espnowRecieved.msgOrder==-2){
+    if(espnowReceiveSet==2){
+      if(espnowRecieved.msgID==0){
+        inCom.print(espnowRecieved.command);
+      }else{
+        char recBufChar[230];
+        sprintf(recBufChar,"~espnow {%02X:%02X:%02X:%02X:%02X:%02X ID:%d}---- %s"
+        ,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],espnowRecieved.msgID,espnowRecieved.command);
+        inCom.println(recBufChar);
+      }
     }
+    if (espnowRecieved.msgID==2){
+      receivedCommand = espnowRecieved.command;
+    
+    }
+  }else{
+
+    if (espnowRecieved.msgOrder==-1){
+      if(espnowmsgOrderLast!=-1){
+        espnowCompiledMsg=espnowCompiledMsg+espnowRecieved.command;
+        espnowmsgOrderLast=-1;
+        if(espnowReceiveSet==2){
+          
+          
+          if(espnowRecieved.msgID==0){
+            inCom.print(espnowCompiledMsg);
+          }else{
+            char recBufChar[230];
+            sprintf(recBufChar,"~espnow {%02X:%02X:%02X:%02X:%02X:%02X ID:%d}---- "
+            ,mac[0],mac[1],mac[2],mac[3],mac[4],mac[5],espnowRecieved.msgID);
+
+            inCom.println(recBufChar);
+            inCom.println(espnowCompiledMsg);
+          }
+        }
+        if (espnowRecieved.msgID==2){
+          receivedCommand = espnowCompiledMsg;
+        
+        }
+      }else{
+        inCom.println("message closer without body recieved",red);
+      }
+    }else{
+      if(espnowRecieved.msgOrder-1==espnowmsgOrderLast){
+        espnowCompiledMsg=espnowCompiledMsg+espnowRecieved.command;
+        espnowmsgOrderLast=espnowmsgOrderLast+1;
+      }else{
+        
+        inCom.println("non-consecutive message cell received",red);
+      }
+    }
+
+    
   }
-  if (espnowRecieved.msgID==2){
-    receivedCommand = espnowRecieved.command;
   
-  }
 }
 
 void printMac(uint8_t mac[6]){
