@@ -166,126 +166,6 @@ void mainSendFunction(char command[200],int msgID);
   TFT_eSPI tft = TFT_eSPI();
   TFT_eSprite img = TFT_eSprite(&tft);
 #endif
-//wifi startup
-  const char* ssid = "ESP32-AP";
-  const char* password = NULL;
-
-  // DNS server configuration
-  DNSServer dnsServer;
-  const byte DNS_PORT = 53;
-  //IPAddress apIP(192, 168, 4, 1); // IP address of the ESP32 in AP mode
-  const IPAddress localIP(4, 3, 2, 1);		   // the IP address the web server, Samsung requires the IP to be in public space
-  const IPAddress gatewayIP(4, 3, 2, 1);		   // IP address of the network should be the same as the local IP for captive portals
-  const IPAddress subnetMask(255, 255, 255, 0);
-  const String localIPURL = "http://4.3.2.1";
-  // Web server
-  AsyncWebServer server(80);
-  AsyncWebSocket ws("/ws"); // WebSocket server on the "/ws" path
-
-  String inputMessage = "No message";
-
-  // WebSocket event handler
-  void webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t length) {
-    if (type == WS_EVT_CONNECT) {
-      inCom.clearCMD();
-      inCom.print("WebSocket client #");
-      inCom.print((int)client->id());
-      inCom.print(" connected\n");
-      inCom.reprintCMD();
-    } else if (type == WS_EVT_DISCONNECT) {
-      inCom.clearCMD();
-      inCom.print("WebSocket client #");
-      inCom.print((int)client->id());
-      inCom.print(" disconnected\n");
-      inCom.reprintCMD();
-    } else if (type == WS_EVT_DATA) {
-      inCom.clearCMD();
-      String msg = String((char*)data);
-      inCom.println("Received message: " + msg);
-      client->text("Echo: " + msg); // Echo back the received message
-      inCom.reprintCMD();
-    }
-  }
-  const char index_html[] PROGMEM = R"rawliteral(
-    <!DOCTYPE HTML><html>
-    <head>
-      <title>ESP32 WebSocket</title>
-      <script>
-        var ws;
-        function init() {
-          ws = new WebSocket('ws://' + location.hostname + '/ws');
-          ws.onmessage = function(event) {
-            var terminal = document.getElementById("terminal");
-            terminal.value += event.data + "\n";
-            terminal.scrollTop = terminal.scrollHeight;
-          };
-        
-          document.getElementById("input").addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-              send();
-              event.preventDefault(); // Prevent the default action (form submission)
-            }
-          });
-        }
-
-        function send() {
-          var input = document.getElementById("input").value;
-          ws.send(input);
-          document.getElementById("input").value = "";
-        }
-
-        window.onload = init;
-      </script>
-    </head>
-    <body>
-      <h1>ESP32 WebSocket Terminal</h1>
-      <textarea id="terminal" rows="20" cols="100" readonly></textarea><br>
-      <input type="text" id="input" size="100" autocomplete="off">
-      <button onclick="send()">Send</button>
-      <h2>
-        <a href="http://4.3.2.1/update">Update portal</a>
-      </h2>
-    </body>
-    </html>
-  )rawliteral";
-
-  void printRequestDetails(AsyncWebServerRequest *request) {
-    if(debug){
-      inCom.clearCMD();
-      inCom.println("Request received:");
-      inCom.print("  URL: ");
-      inCom.println(request->url());
-      inCom.print("  Method: ");
-      inCom.println(request->methodToString());
-      inCom.print("  HTTP Version: ");
-      inCom.println(request->version());
-      
-      // Print the headers
-      inCom.println("  Headers:");
-      int headersCount = request->headers();
-      for (int i = 0; i < headersCount; i++) {
-        const AsyncWebHeader* header = request->getHeader(i);
-        inCom.print("    ");
-        inCom.print(header->name());
-        inCom.print(": ");
-        inCom.println(header->value());
-      }
-
-      // Print the parameters (if any)
-      inCom.println("  Parameters:");
-      int paramsCount = request->params();
-      for (int i = 0; i < paramsCount; i++) {
-        const AsyncWebParameter* param = request->getParam(i);
-        inCom.print("    ");
-        inCom.print(param->name());
-        inCom.print(": ");
-        inCom.println(param->value());
-      }
-
-      inCom.println(); // Just to add a blank line for readability
-      inCom.reprintCMD();
-    }
-  }
 
 USBHIDKeyboard Keyboard;
 
@@ -308,6 +188,7 @@ USBHIDKeyboard Keyboard;
   int commandInt;
   fs::File file;
   bool usbInit=false;
+  std::vector<String> commandQueue;
 //init espnow var
   typedef struct struct_message {
     char command[200];
@@ -422,6 +303,130 @@ USBHIDKeyboard Keyboard;
     };
 //
 
+//wifi startup
+  String ssid = "ESP32-AP";
+  String password = "";
+
+  // DNS server configuration
+  DNSServer dnsServer;
+  const byte DNS_PORT = 53;
+  //IPAddress apIP(192, 168, 4, 1); // IP address of the ESP32 in AP mode
+  const IPAddress localIP(4, 3, 2, 1);		   // the IP address the web server, Samsung requires the IP to be in public space
+  const IPAddress gatewayIP(4, 3, 2, 1);		   // IP address of the network should be the same as the local IP for captive portals
+  const IPAddress subnetMask(255, 255, 255, 0);
+  const String localIPURL = "http://4.3.2.1";
+  // Web server
+  AsyncWebServer server(80);
+  AsyncWebSocket ws("/ws"); // WebSocket server on the "/ws" path
+
+  String inputMessage = "No message";
+
+  // WebSocket event handler
+  void webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t length) {
+    if (type == WS_EVT_CONNECT) {
+      inCom.clearCMD();
+      inCom.print("WebSocket client #");
+      inCom.print((int)client->id());
+      inCom.print(" connected\n");
+      inCom.reprintCMD();
+    } else if (type == WS_EVT_DISCONNECT) {
+      inCom.clearCMD();
+      inCom.print("WebSocket client #");
+      inCom.print((int)client->id());
+      inCom.print(" disconnected\n");
+      inCom.reprintCMD();
+    } else if (type == WS_EVT_DATA) {
+      inCom.clearCMD();
+      String msg = String((char*)data);
+      inCom.println("Received message: " + msg);
+      client->text("Echo: " + msg); // Echo back the received message
+      commandQueue.push_back(msg);
+      inCom.reprintCMD();
+    }
+  }
+  const char index_html[] PROGMEM = R"rawliteral(
+    <!DOCTYPE HTML><html>
+    <head>
+      <title>ESP32 WebSocket</title>
+      <script>
+        var ws;
+        function init() {
+          ws = new WebSocket('ws://' + location.hostname + '/ws');
+          ws.onmessage = function(event) {
+            var terminal = document.getElementById("terminal");
+            terminal.value += event.data + "\n";
+            terminal.scrollTop = terminal.scrollHeight;
+          };
+        
+          document.getElementById("input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+              send();
+              event.preventDefault(); // Prevent the default action (form submission)
+            }
+          });
+        }
+
+        function send() {
+          var input = document.getElementById("input").value;
+          ws.send(input);
+          document.getElementById("input").value = "";
+        }
+
+        window.onload = init;
+      </script>
+    </head>
+    <body>
+      <h1>ESP32 WebSocket Terminal</h1>
+      <textarea id="terminal" rows="20" cols="100" readonly></textarea><br>
+      <input type="text" id="input" size="100" autocomplete="off">
+      <button onclick="send()">Send</button>
+      <h2>
+        <a href="http://4.3.2.1/update">Update portal</a>
+      </h2>
+    </body>
+    </html>
+  )rawliteral";
+
+  void printRequestDetails(AsyncWebServerRequest *request) {
+    if(debug){
+      inCom.clearCMD();
+      inCom.println("Request received:");
+      inCom.print("  URL: ");
+      inCom.println(request->url());
+      inCom.print("  Method: ");
+      inCom.println(request->methodToString());
+      inCom.print("  HTTP Version: ");
+      inCom.println(request->version());
+      
+      // Print the headers
+      inCom.println("  Headers:");
+      int headersCount = request->headers();
+      for (int i = 0; i < headersCount; i++) {
+        const AsyncWebHeader* header = request->getHeader(i);
+        inCom.print("    ");
+        inCom.print(header->name());
+        inCom.print(": ");
+        inCom.println(header->value());
+      }
+
+      // Print the parameters (if any)
+      inCom.println("  Parameters:");
+      int paramsCount = request->params();
+      for (int i = 0; i < paramsCount; i++) {
+        const AsyncWebParameter* param = request->getParam(i);
+        inCom.print("    ");
+        inCom.print(param->name());
+        inCom.print(": ");
+        inCom.println(param->value());
+      }
+
+      inCom.println(); // Just to add a blank line for readability
+      inCom.reprintCMD();
+    }
+  }
+
+
+
 
 void setup() {
   //init serial
@@ -500,9 +505,9 @@ void loop() {
         identifyCommand(fullCommandString);
       }
       inCom.flush(true);
-    }else if(strcmp(receivedCommand.c_str(),"")!=0){
-      String receivedCommandBuf=inCom.addonString+" "+receivedCommand;
-      receivedCommand="";
+    }else if(!commandQueue.empty()){
+      String receivedCommandBuf=inCom.addonString+" "+vc(commandQueue,0);
+      commandQueue.erase(commandQueue.begin());
       receivedCommandBuf.trim();
       identifyCommand(receivedCommandBuf);
     }
@@ -1165,11 +1170,15 @@ void identifyCommand(String command){
           switch(inCom.multiComp(vc(commandVector,1),wifiIndex)){
             //ssid
               case 0:{
-                
+                ssid=vc(commandVector,2);
+                inCom.print("ssid changed to: ");
+                inCom.println(vc(commandVector,2));
               break;}
             //password
               case 1:{
-
+                password=vc(commandVector,2);
+                inCom.print("password changed to: ");
+                inCom.println(vc(commandVector,2));
               break;}
             //begin
               case 2:{
@@ -1185,7 +1194,7 @@ void identifyCommand(String command){
 
                 inCom.println("Access Point Started");
                 inCom.print("IP Address: ");
-                inCom.println((char)WiFi.softAPIP());
+                Serial.println(WiFi.softAPIP().toString());
                 // Start DNS server to redirect all queries to the ESP32's IP
                 dnsServer.start(DNS_PORT, "*", localIP);  // '*' matches all domains
 
@@ -1220,7 +1229,7 @@ void identifyCommand(String command){
               break;}
             //end
               case 3:{
-
+                WiFi.softAPdisconnect(true);
               break;}
 
           }
@@ -1321,8 +1330,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
       }
     }
     if (espnowRecieved.msgID==2){
-      receivedCommand = espnowRecieved.command;
-    
+     commandQueue.push_back(espnowRecieved.command);
     }
   }else{
 
@@ -1345,8 +1353,7 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
           }
         }
         if (espnowRecieved.msgID==2){
-          receivedCommand = espnowCompiledMsg;
-        
+          commandQueue.push_back(espnowCompiledMsg);
         }
       }else{
         inCom.println("message closer without body recieved",red);
