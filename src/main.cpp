@@ -5,6 +5,9 @@
 #include "SPIFFS.h"
 #include <esp_now.h>
 #include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <DNSServer.h>
+#include <ElegantOTA.h>
 #include <USB.h>
 #include <USBHIDKeyboard.h>
 #include "pin_config.h"
@@ -163,6 +166,126 @@ void mainSendFunction(char command[200],int msgID);
   TFT_eSPI tft = TFT_eSPI();
   TFT_eSprite img = TFT_eSprite(&tft);
 #endif
+//wifi startup
+  const char* ssid = "ESP32-AP";
+  const char* password = NULL;
+
+  // DNS server configuration
+  DNSServer dnsServer;
+  const byte DNS_PORT = 53;
+  //IPAddress apIP(192, 168, 4, 1); // IP address of the ESP32 in AP mode
+  const IPAddress localIP(4, 3, 2, 1);		   // the IP address the web server, Samsung requires the IP to be in public space
+  const IPAddress gatewayIP(4, 3, 2, 1);		   // IP address of the network should be the same as the local IP for captive portals
+  const IPAddress subnetMask(255, 255, 255, 0);
+  const String localIPURL = "http://4.3.2.1";
+  // Web server
+  AsyncWebServer server(80);
+  AsyncWebSocket ws("/ws"); // WebSocket server on the "/ws" path
+
+  String inputMessage = "No message";
+
+  // WebSocket event handler
+  void webSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t length) {
+    if (type == WS_EVT_CONNECT) {
+      inCom.clearCMD();
+      inCom.print("WebSocket client #");
+      inCom.print((int)client->id());
+      inCom.print(" connected\n");
+      inCom.reprintCMD();
+    } else if (type == WS_EVT_DISCONNECT) {
+      inCom.clearCMD();
+      inCom.print("WebSocket client #");
+      inCom.print((int)client->id());
+      inCom.print(" disconnected\n");
+      inCom.reprintCMD();
+    } else if (type == WS_EVT_DATA) {
+      inCom.clearCMD();
+      String msg = String((char*)data);
+      inCom.println("Received message: " + msg);
+      client->text("Echo: " + msg); // Echo back the received message
+      inCom.reprintCMD();
+    }
+  }
+  const char index_html[] PROGMEM = R"rawliteral(
+    <!DOCTYPE HTML><html>
+    <head>
+      <title>ESP32 WebSocket</title>
+      <script>
+        var ws;
+        function init() {
+          ws = new WebSocket('ws://' + location.hostname + '/ws');
+          ws.onmessage = function(event) {
+            var terminal = document.getElementById("terminal");
+            terminal.value += event.data + "\n";
+            terminal.scrollTop = terminal.scrollHeight;
+          };
+        
+          document.getElementById("input").addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+              send();
+              event.preventDefault(); // Prevent the default action (form submission)
+            }
+          });
+        }
+
+        function send() {
+          var input = document.getElementById("input").value;
+          ws.send(input);
+          document.getElementById("input").value = "";
+        }
+
+        window.onload = init;
+      </script>
+    </head>
+    <body>
+      <h1>ESP32 WebSocket Terminal</h1>
+      <textarea id="terminal" rows="20" cols="100" readonly></textarea><br>
+      <input type="text" id="input" size="100" autocomplete="off">
+      <button onclick="send()">Send</button>
+      <h2>
+        <a href="http://4.3.2.1/update">Update portal</a>
+      </h2>
+    </body>
+    </html>
+  )rawliteral";
+
+  void printRequestDetails(AsyncWebServerRequest *request) {
+    if(debug){
+      inCom.clearCMD();
+      inCom.println("Request received:");
+      inCom.print("  URL: ");
+      inCom.println(request->url());
+      inCom.print("  Method: ");
+      inCom.println(request->methodToString());
+      inCom.print("  HTTP Version: ");
+      inCom.println(request->version());
+      
+      // Print the headers
+      inCom.println("  Headers:");
+      int headersCount = request->headers();
+      for (int i = 0; i < headersCount; i++) {
+        const AsyncWebHeader* header = request->getHeader(i);
+        inCom.print("    ");
+        inCom.print(header->name());
+        inCom.print(": ");
+        inCom.println(header->value());
+      }
+
+      // Print the parameters (if any)
+      inCom.println("  Parameters:");
+      int paramsCount = request->params();
+      for (int i = 0; i < paramsCount; i++) {
+        const AsyncWebParameter* param = request->getParam(i);
+        inCom.print("    ");
+        inCom.print(param->name());
+        inCom.print(": ");
+        inCom.println(param->value());
+      }
+
+      inCom.println(); // Just to add a blank line for readability
+      inCom.reprintCMD();
+    }
+  }
 
 USBHIDKeyboard Keyboard;
 
@@ -217,7 +340,8 @@ USBHIDKeyboard Keyboard;
       "/espnow",
       "/run",
       "/test",
-      "/usb"
+      "/usb",
+      "/wifi"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -289,6 +413,13 @@ USBHIDKeyboard Keyboard;
 
 
     };
+  //wifi
+    char wifiIndex [50][20]={
+      "ssid",
+      "password",
+      "begin",
+      "end"
+    };
 //
 
 
@@ -343,6 +474,8 @@ void setup() {
 
 
 void loop() {
+  dnsServer.processNextRequest();
+  ElegantOTA.loop();
   button.tick();
   //check command
     if(inCom.check()){
@@ -1026,6 +1159,71 @@ void identifyCommand(String command){
             }
           }
 
+        break;}
+      //wifi
+        case 10:{
+          switch(inCom.multiComp(vc(commandVector,1),wifiIndex)){
+            //ssid
+              case 0:{
+                
+              break;}
+            //password
+              case 1:{
+
+              break;}
+            //begin
+              case 2:{
+                #define MAX_CLIENTS 4
+                // Define the WiFi channel to be used (channel 6 in this case)
+                #define WIFI_CHANNEL 6
+
+                // Set the WiFi mode to access point and station
+                WiFi.mode(WIFI_MODE_AP);
+                const IPAddress subnetMask(255, 255, 255, 0);
+                WiFi.softAPConfig(localIP, gatewayIP, subnetMask);
+                WiFi.softAP(ssid, password, WIFI_CHANNEL, 0, MAX_CLIENTS);
+
+                inCom.println("Access Point Started");
+                inCom.print("IP Address: ");
+                inCom.println((char)WiFi.softAPIP());
+                // Start DNS server to redirect all queries to the ESP32's IP
+                dnsServer.start(DNS_PORT, "*", localIP);  // '*' matches all domains
+
+                // Set up the web server
+                server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+                  //if (!request->authenticate("hello", "world")) {
+                  //  return request->requestAuthentication();
+                  //}
+                  printRequestDetails(request);
+                  request->send_P(200, "text/html", index_html);
+                });
+
+                server.on("/generate_204", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });		   // android captive portal redirect
+                server.on("/redirect", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });			   // microsoft redirect
+                server.on("/hotspot-detect.html", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });  // apple call home
+                server.on("/canonical.html", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });	   // firefox captive portal call home
+                server.on("/success.txt", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->send(200); });					   // firefox captive portal call home
+                server.on("/ncsi.txt", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });
+
+
+                server.onNotFound([](AsyncWebServerRequest *request){
+                  //request->send(200, "text/html", "<h1>Page Not Found, but here is the captive portal!</h1>");
+                  printRequestDetails(request);
+                  request->redirect("/");
+                });
+                ElegantOTA.begin(&server,"admin","apocalypse");
+                ws.onEvent(webSocketEvent);
+                server.addHandler(&ws);
+                // Start the web server
+                server.begin();
+                  
+              break;}
+            //end
+              case 3:{
+
+              break;}
+
+          }
         break;}
     }
   
