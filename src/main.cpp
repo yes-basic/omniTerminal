@@ -180,6 +180,7 @@ USBHIDKeyboard Keyboard;
   const char white[15]="\033[37m";
   
 //init misc var
+  String commandBuf;
   String fullCommandString;
   char breakChar='a';
   long millisLastRefresh;
@@ -484,27 +485,19 @@ void loop() {
   button.tick();
   //check command
     if(inCom.check()){
-      if(debug){inCom.println(inCom.commandString);}
+      commandBuf=inCom.commandString;
+      inCom.flush(true);
+      if(debug){inCom.println(commandBuf);}
 
-      if(debug){
-        for (int i = 0; i < inCom.wordsInCommand; i++) {
-          inCom.print("Word ");
-          inCom.print(i);
-          inCom.print(": ");
-          inCom.print("\"");
-          inCom.print(inCom.commandArray[i]);
-          inCom.println("\"");
-        }
-      }
       if(inCom.commandString.charAt(0)=='>'){
-        inCom.commandString.remove(0,1);
-        inCom.addonString=inCom.commandString;
+        commandBuf.remove(0,1);
+        inCom.addonString=commandBuf;
       }else{
-        fullCommandString=inCom.addonString+" "+inCom.commandString;
+        fullCommandString=inCom.addonString+" "+commandBuf;
         fullCommandString.trim();
         identifyCommand(fullCommandString);
       }
-      inCom.flush(true);
+      
     }else if(!commandQueue.empty()){
       String receivedCommandBuf=inCom.addonString+" "+vc(commandQueue,0);
       commandQueue.erase(commandQueue.begin());
@@ -1194,7 +1187,7 @@ void identifyCommand(String command){
 
                 inCom.println("Access Point Started");
                 inCom.print("IP Address: ");
-                Serial.println(WiFi.softAPIP().toString());
+                inCom.println(WiFi.softAPIP().toString());
                 // Start DNS server to redirect all queries to the ESP32's IP
                 dnsServer.start(DNS_PORT, "*", localIP);  // '*' matches all domains
 

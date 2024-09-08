@@ -19,24 +19,37 @@ bool serialCommand::check() {
       // get the new byte:
         inChar = (char)Serial.read();
       if(commandString.isEmpty()){
-        clearCMD();
-        reprintCMD();
+        if(serialState!=1){
+          clearCMD();
+          reprintCMD();
+        }
       }
         if(inChar=='\r'||inChar=='\n'){
+          if(serialState!=1){
             println("");
-            return true;
-            commandString.trim();
+          }
+          return true;
+          commandString.trim();
         }
         //backspace charactor is 127
         if(inChar!=127){
-            print(inChar,userColor);
-            // add it to the commandString:
-            commandString += inChar;
+          if(serialState!=1){
+            serialState=2;
+            snprintf(bufString,198,"%s%c",userColor,inChar);send(bufString);
+          }
+          // add it to the commandString:
+          commandString += inChar;
         }else{
           if(!commandString.isEmpty()){
-            print('\b');
-            print(' ');
-            print('\b');
+            if(serialState!=1){
+              serialState=2;
+              snprintf(bufString,198,"%c",'\b');send(bufString);
+              serialState=2;
+              snprintf(bufString,198,"%c",' ');send(bufString);
+              serialState=2;
+              snprintf(bufString,198,"%c",'\b');send(bufString);
+              
+            }
             commandString.remove(commandString.length()-1);
           }
         }
@@ -224,41 +237,49 @@ void serialCommand::reprintCMD(){
 //serial replacements
     bool serialCommand::available(){if(Serial.available()){return true;}else{return false;}}
 
-    void serialCommand::println() {snprintf(bufString,198,"\n");send(bufString);}
-    void serialCommand::print(char v[]) {snprintf(bufString,198,"%s%s",baseColor,v);send(bufString);}
-    void serialCommand::println(char v[]) {snprintf(bufString,198,"%s%s\n",baseColor,v);send(bufString);}
-    void serialCommand::print(char v) {snprintf(bufString,198,"%s%c",baseColor,v);send(bufString);}
-    void serialCommand::println(char v) {snprintf(bufString,198,"%s%c\n",baseColor,v);send(bufString);}
-    void serialCommand::print(long v) {snprintf(bufString,198,"%s%d",baseColor,v);send(bufString);}
-    void serialCommand::println(long v) {snprintf(bufString,198,"%s%d\n",baseColor,v);send(bufString);}
-    void serialCommand::print(int v) {snprintf(bufString,198,"%s%d",baseColor,v);send(bufString);}
-    void serialCommand::println(int v) {snprintf(bufString,198,"%s%d\n",baseColor,v);send(bufString);}
-    void serialCommand::print(const char v[]) {snprintf(bufString,198,"%s%s",baseColor,v);send(bufString);}
-    void serialCommand::println(const char v[]) {snprintf(bufString,198,"%s%s\n",baseColor,v);send(bufString);}
-    void serialCommand::print(String v) {snprintf(bufString,198,"%s%s",baseColor,v.c_str());send(bufString);}
-    void serialCommand::println(String v) {snprintf(bufString,198,"%s%s\n",baseColor,v.c_str());send(bufString);}
+    void serialCommand::println() {serialState=0;snprintf(bufString,198,"\n");send(bufString);}
+    void serialCommand::print(char v[]) {serialState=1;snprintf(bufString,198,"%s%s",baseColor,v);send(bufString);}
+    void serialCommand::println(char v[]) {serialState=0;snprintf(bufString,198,"%s%s\n",baseColor,v);send(bufString);}
+    void serialCommand::print(char v) {serialState=1;snprintf(bufString,198,"%s%c",baseColor,v);send(bufString);}
+    void serialCommand::println(char v) {serialState=0;snprintf(bufString,198,"%s%c\n",baseColor,v);send(bufString);}
+    void serialCommand::print(long v) {serialState=1;snprintf(bufString,198,"%s%d",baseColor,v);send(bufString);}
+    void serialCommand::println(long v) {serialState=0;snprintf(bufString,198,"%s%d\n",baseColor,v);send(bufString);}
+    void serialCommand::print(int v) {serialState=1;snprintf(bufString,198,"%s%d",baseColor,v);send(bufString);}
+    void serialCommand::println(int v) {serialState=0;snprintf(bufString,198,"%s%d\n",baseColor,v);send(bufString);}
+    void serialCommand::print(const char v[]) {serialState=1;snprintf(bufString,198,"%s%s",baseColor,v);send(bufString);}
+    void serialCommand::println(const char v[]) {serialState=0;snprintf(bufString,198,"%s%s\n",baseColor,v);send(bufString);}
+    void serialCommand::print(String v) {serialState=1;snprintf(bufString,198,"%s%s",baseColor,v.c_str());send(bufString);}
+    void serialCommand::println(String v) {serialState=0;snprintf(bufString,198,"%s%s\n",baseColor,v.c_str());send(bufString);}
 
 
-    void serialCommand::print(char v[],const char color[15]) {snprintf(bufString,198,"%s%s",color,v);send(bufString);}
-    void serialCommand::println(char v[],const char color[15]) {snprintf(bufString,198,"%s%s\n",color,v);send(bufString);}
-    void serialCommand::print(char v,const char color[15]) {snprintf(bufString,198,"%s%c",color,v);send(bufString);}
-    void serialCommand::println(char v,const char color[15]) {snprintf(bufString,198,"%s%c\n",color,v);send(bufString);}
-    void serialCommand::print(long v,const char color[15]) {snprintf(bufString,198,"%s%d",color,v);send(bufString);}
-    void serialCommand::println(long v,const char color[15]) {snprintf(bufString,198,"%s%d\n",color,v);send(bufString);}
-    void serialCommand::print(int v,const char color[15]) {snprintf(bufString,198,"%s%d",color,v);send(bufString);}
-    void serialCommand::println(int v,const char color[15]) {snprintf(bufString,198,"%s%d\n",color,v);send(bufString);}
-    void serialCommand::print(const char v[],const char color[15]) {snprintf(bufString,198,"%s%s",color,v);send(bufString);}
-    void serialCommand::println(const char v[],const char color[15]) {snprintf(bufString,198,"%s%s\n",color,v);send(bufString);}
-    void serialCommand::print(String v,const char color[15]) {snprintf(bufString,198,"%s%s",color,v.c_str());send(bufString);}
-    void serialCommand::println(String v,const char color[15]) {snprintf(bufString,198,"%s%s\n",color,v.c_str());send(bufString);}
+    void serialCommand::print(char v[],const char color[15]) {serialState=1;snprintf(bufString,198,"%s%s",color,v);send(bufString);}
+    void serialCommand::println(char v[],const char color[15]) {serialState=0;snprintf(bufString,198,"%s%s\n",color,v);send(bufString);}
+    void serialCommand::print(char v,const char color[15]) {serialState=1;snprintf(bufString,198,"%s%c",color,v);send(bufString);}
+    void serialCommand::println(char v,const char color[15]) {serialState=0;snprintf(bufString,198,"%s%c\n",color,v);send(bufString);}
+    void serialCommand::print(long v,const char color[15]) {serialState=1;snprintf(bufString,198,"%s%d",color,v);send(bufString);}
+    void serialCommand::println(long v,const char color[15]) {serialState=0;snprintf(bufString,198,"%s%d\n",color,v);send(bufString);}
+    void serialCommand::print(int v,const char color[15]) {serialState=1;snprintf(bufString,198,"%s%d",color,v);send(bufString);}
+    void serialCommand::println(int v,const char color[15]) {serialState=0;snprintf(bufString,198,"%s%d\n",color,v);send(bufString);}
+    void serialCommand::print(const char v[],const char color[15]) {serialState=1;snprintf(bufString,198,"%s%s",color,v);send(bufString);}
+    void serialCommand::println(const char v[],const char color[15]) {serialState=0;snprintf(bufString,198,"%s%s\n",color,v);send(bufString);}
+    void serialCommand::print(String v,const char color[15]) {serialState=1;snprintf(bufString,198,"%s%s",color,v.c_str());send(bufString);}
+    void serialCommand::println(String v,const char color[15]) {serialState=0;snprintf(bufString,198,"%s%s\n",color,v.c_str());send(bufString);}
 
 
 
   void serialCommand::send(char data[200]){
+    if(previousSerialState==0&&serialState!=2){clearCMD();}
     Serial.print(data);
     if(sendFunction!= nullptr){
       sendFunction(data,0);
     }
+    if(serialState==0){
+      reprintCMD();
+    }
+    if(serialState==1||serialState==0){
+      previousSerialState=serialState;
+    }
+    
   }
 
   void serialCommand::registerSendFunction(sendFunctionPtr function){

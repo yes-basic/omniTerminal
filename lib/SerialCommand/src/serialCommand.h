@@ -13,6 +13,8 @@ class serialCommand
 {
   public:
     serialCommand();
+    int serialState=0; // 0=no printing 1=printing println works as the prompt for the user
+    int previousSerialState=0;
     void tryEspnowSend(char packet[200]);
     bool debug;
     bool check();
