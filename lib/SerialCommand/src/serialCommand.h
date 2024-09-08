@@ -58,6 +58,7 @@ class serialCommand
 
         char baseColor[15]="\033[37m";
         char userColor[15]="\033[36m";
+        char altUserColor[15]="\033[33m";
         void write(int v);
         typedef void (*sendFunctionPtr)(char command[200],int msgID);
         sendFunctionPtr sendFunction=nullptr;

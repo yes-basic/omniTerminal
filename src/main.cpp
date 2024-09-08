@@ -180,6 +180,7 @@ USBHIDKeyboard Keyboard;
   const char white[15]="\033[37m";
   
 //init misc var
+  String receivedCommandBuf;
   String commandBuf;
   String fullCommandString;
   char breakChar='a';
@@ -493,13 +494,17 @@ void loop() {
         commandBuf.remove(0,1);
         inCom.addonString=commandBuf;
       }else{
+        fullCommandString=inCom.addonString+">>"+commandBuf;
+        inCom.println(fullCommandString,inCom.userColor);
         fullCommandString=inCom.addonString+" "+commandBuf;
         fullCommandString.trim();
         identifyCommand(fullCommandString);
       }
       
     }else if(!commandQueue.empty()){
-      String receivedCommandBuf=inCom.addonString+" "+vc(commandQueue,0);
+      receivedCommandBuf=inCom.addonString+">>"+vc(commandQueue,0);
+      inCom.println(receivedCommandBuf,inCom.altUserColor);
+      receivedCommandBuf=inCom.addonString+" "+vc(commandQueue,0);
       commandQueue.erase(commandQueue.begin());
       receivedCommandBuf.trim();
       identifyCommand(receivedCommandBuf);
