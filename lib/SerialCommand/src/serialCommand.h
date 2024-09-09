@@ -30,13 +30,13 @@ class serialCommand
     bool isValidLong(char* str);
     bool isValidHex(const char* str);
     char addonArray[20][20];
-    char bufString[400];
+    String bufString;
     void compileCharArray(char array[][20],int rows,char *string[]);
     #ifdef USE_BTclassic
     BluetoothSerial SerialBT;
     #endif
     void noRec(const char usingIndex[20]);
-    void send(char data[200]);
+    void send(String data);
     void clearCMD();
     void reprintCMD();
     //serial replacements
