@@ -5,6 +5,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
+
 serialCommand::serialCommand()
 {
 commandString.reserve(200);
@@ -265,14 +266,22 @@ void serialCommand::reprintCMD(){
     void serialCommand::print(String v,const char color[15]) {serialState=1;snprintf(bufString,198,"%s%s",color,v.c_str());send(bufString);}
     void serialCommand::println(String v,const char color[15]) {serialState=0;snprintf(bufString,198,"%s%s\n",color,v.c_str());send(bufString);}
 
+    void serialCommand::printFree(){serialState=0;snprintf(bufString,198,"");send(bufString);}
 
 
   void serialCommand::send(char data[200]){
     if(previousSerialState==0&&serialState!=2){clearCMD();}
     Serial.print(data);
-    if(sendFunction!= nullptr){
-      sendFunction(data,0);
+    if(serialState!=2){
+      sendString=sendString+data;
+      if(serialState==0){
+        for (const auto& listener : listenerFunctionRegistry) {
+            listener.function(sendString);
+        }
+        sendString.clear();
+      }
     }
+    
     if(serialState==0){
       reprintCMD();
     }
@@ -282,10 +291,25 @@ void serialCommand::reprintCMD(){
     
   }
 
-  void serialCommand::registerSendFunction(sendFunctionPtr function){
-    sendFunction=function;
-  }
-  void serialCommand::unregisterSendFunction(){
-    sendFunction=nullptr;
-  }
+  void serialCommand::registerListenerFunction(const String& name, listenerFunctionPtr function) {
+    // Iterate through the vector to find the item with the matching name
+    for (auto it = listenerFunctionRegistry.begin(); it != listenerFunctionRegistry.end(); ++it) {
+        if (it->name == name) {
+            if (function == nullptr) {
+                // If newFunc is nullptr, remove the element from the vector
+                listenerFunctionRegistry.erase(it);
+            } else {
+                // If the string exists and newFunc is valid, replace the function
+                it->function = function;
+            }
+            return;
+        }
+    }
+
+    // If the string doesn't exist and newFunc is not nullptr, add a new entry
+    if (function != nullptr) {
+        listenerFunctionRegistry.push_back({name, function});
+    }
+}
+
 

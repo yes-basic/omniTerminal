@@ -7,7 +7,7 @@
   #include "BluetoothSerial.h"
 #endif
 #include "SPIFFS.h"
-
+#include <vector>
 
 class serialCommand
 {
@@ -56,15 +56,21 @@ class serialCommand
         void print(long v,const char color[15]);void println(long v,const char color[15]);
         void print(String v,const char color[15]);void println(String v,const char color[15]);
 
+        void printFree();
         char baseColor[15]="\033[37m";
         char userColor[15]="\033[36m";
         char altUserColor[15]="\033[33m";
         void write(int v);
-        typedef void (*sendFunctionPtr)(char command[200],int msgID);
-        sendFunctionPtr sendFunction=nullptr;
-        void registerSendFunction(sendFunctionPtr function);
-        void unregisterSendFunction();
-        
+        typedef void (*listenerFunctionPtr)(String data);
+        void registerListenerFunction(const String& name, listenerFunctionPtr function);
+        String sendString;
+        typedef std::function<void(const String&)> listenerFunction;
+        struct listenerFunctionRegistryEntry
+        {
+          String name;
+          listenerFunction function;
+        };
+        std::vector<listenerFunctionRegistryEntry> listenerFunctionRegistry;
       bool available();
   private:
     char inChar;
