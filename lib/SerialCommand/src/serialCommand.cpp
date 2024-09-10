@@ -246,15 +246,15 @@ void serialCommand::reprintCMD(){
     void serialCommand::println() {serialState=0;bufString="\n";send(bufString);}
     void serialCommand::print(char v[]) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);}
     void serialCommand::println(char v[]) {serialState=0;bufString=baseColor;bufString.concat(v);bufString.concat("\n");send(bufString);}
-    void serialCommand::print(char v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);send(bufString);}
+    void serialCommand::print(char v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);}
     void serialCommand::println(char v) {serialState=0;bufString=baseColor;bufString.concat(v);bufString.concat("\n");send(bufString);}
-    void serialCommand::print(long v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);send(bufString);}
+    void serialCommand::print(long v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);}
     void serialCommand::println(long v) {serialState=0;bufString=baseColor;bufString.concat(v);bufString.concat("\n");send(bufString);}
-    void serialCommand::print(int v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);send(bufString);}
+    void serialCommand::print(int v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);}
     void serialCommand::println(int v) {serialState=0;bufString=baseColor;bufString.concat(v);bufString.concat("\n");send(bufString);}
-    void serialCommand::print(const char v[]) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);send(bufString);}
+    void serialCommand::print(const char v[]) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);}
     void serialCommand::println(const char v[]) {serialState=0;bufString=baseColor;bufString.concat(v);bufString.concat("\n");send(bufString);}
-    void serialCommand::print(String v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);send(bufString);}
+    void serialCommand::print(String v) {serialState=1;bufString=baseColor;bufString.concat(v);send(bufString);}
     void serialCommand::println(String v) {serialState=0;bufString=baseColor;bufString.concat(v);bufString.concat("\n");send(bufString);}
 
 
