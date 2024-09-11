@@ -13,6 +13,8 @@
 #include "pin_config.h"
 #include "OneButton.h" // https://github.com/mathertel/OneButton
 #include <vector>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 OneButton button(BTN_PIN, true);
 
 
@@ -169,7 +171,7 @@ void espnowSendFunction(String data);
 #endif
 
 USBHIDKeyboard Keyboard;
-
+long testTime;
 //ANSI format
   const char black[15]="\033[30m";
   const char red[15]="\033[31m";
@@ -181,6 +183,7 @@ USBHIDKeyboard Keyboard;
   const char white[15]="\033[37m";
   
 //init misc var
+  TaskHandle_t mainTaskHandle;
   esp_now_send_status_t receiveResult;
   String receivedCommandBuf;
   String commandBuf;
@@ -479,6 +482,7 @@ void setup() {
     identifyCommand("/run /omniTerminalSYS/onButtonPress.txt");
     inCom.reprintCMD();
     });
+  mainTaskHandle=xTaskGetCurrentTaskHandle();
 }
 
 
@@ -898,6 +902,11 @@ void identifyCommand(String command){
                       }
                     }
                   }
+                  
+                  if(result==ESP_OK){
+                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                  }
+
                   if(receiveResult == ESP_NOW_SEND_SUCCESS&&result==ESP_OK){
                     inCom.print(esp_err_to_name(result));
                     inCom.print(">");
@@ -996,6 +1005,11 @@ void identifyCommand(String command){
                       }
                     }
                   }
+                  
+                  if(result==ESP_OK){
+                    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+                  }
+                  
                   if(receiveResult == ESP_NOW_SEND_SUCCESS&&result==ESP_OK){
                     inCom.print(esp_err_to_name(result));
                     inCom.print(">");
@@ -1335,6 +1349,8 @@ void strToMac(const char* str, uint8_t* mac) {
 }
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   receiveResult=status;
+  xTaskNotifyGive(mainTaskHandle);
+
 }
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   memcpy(&espnowRecieved, incomingData, sizeof(espnowRecieved));

@@ -4,3 +4,4 @@
 /espnow register 3 DC:DA:0C:30:AB:14
 /espnow rec full
 /espnow tgt 2
+/run /omniTerminalSYS/SDstartupCommands.txt
