@@ -151,7 +151,9 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len);
 void printMac(uint8_t mac[6]);
 void printMac(uint8_t mac[6],const char color[15]);
-void espnowSendFunction(String data);
+//listener functions
+  void espnowSendFunction(String data);
+  void websocketListener(String data);
 //include ir dependancies
   #include "PinDefinitionsAndMore.h"
   #if !defined(RAW_BUFFER_LENGTH)
@@ -355,13 +357,16 @@ long testTime;
     <!DOCTYPE HTML><html>
     <head>
       <title>ESP32 WebSocket</title>
+      <script src="ansi_up.min.js"></script>
       <script>
         var ws;
+        var ansi_up = new AnsiUp();
         function init() {
           ws = new WebSocket('ws://' + location.hostname + '/ws');
           ws.onmessage = function(event) {
             var terminal = document.getElementById("terminal");
-            terminal.value += event.data + "\n";
+            var html = ansi_up.ansi_to_html(event.data);
+            terminal.innerHTML += html;
             terminal.scrollTop = terminal.scrollHeight;
           };
         
@@ -378,14 +383,13 @@ long testTime;
           ws.send(input);
           document.getElementById("input").value = "";
         }
-
         window.onload = init;
       </script>
     </head>
     <body>
       <h1>ESP32 WebSocket Terminal</h1>
-      <textarea id="terminal" rows="20" cols="100" readonly></textarea><br>
-      <input type="text" id="input" size="100" autocomplete="off">
+      <div id="terminal" style="background-color: black; color: white; padding: 10px; white-space: pre-wrap; height: 300px; overflow-y: auto;"></div>
+      <input type="text" id="input" placeholder="Type a message..." style="width: 100%;">
       <button onclick="send()">Send</button>
       <h2>
         <a href="http://4.3.2.1/update">Update portal</a>
@@ -393,6 +397,7 @@ long testTime;
     </body>
     </html>
   )rawliteral";
+  
 
   void printRequestDetails(AsyncWebServerRequest *request) {
     if(debug){
@@ -902,7 +907,7 @@ void identifyCommand(String command){
                       }
                     }
                   }
-                  
+
                   if(result==ESP_OK){
                     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
                   }
@@ -1261,6 +1266,17 @@ void identifyCommand(String command){
                   request->send_P(200, "text/html", index_html);
                 });
 
+                if(!SPIFFS.begin(true)){
+                  inCom.println("An Error has occurred while mounting SPIFFS");
+                  return;
+                }
+                //server.on("/ansi_up.js", HTTP_GET, [](AsyncWebServerRequest *request){
+                //  request->send(SPIFFS, "/ansi_up.js", "application/javascript");
+                //  inCom.println("served",green);
+                //});
+                server.serveStatic("/ansi_up.min.js",SPIFFS,"/ansi_up.min.js");
+
+
                 server.on("/generate_204", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });		   // android captive portal redirect
                 server.on("/redirect", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });			   // microsoft redirect
                 server.on("/hotspot-detect.html", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });  // apple call home
@@ -1279,6 +1295,7 @@ void identifyCommand(String command){
                 server.addHandler(&ws);
                 // Start the web server
                 server.begin();
+                inCom.registerListenerFunction("websocket",websocketListener);
                   
               break;}
             //end
@@ -1424,7 +1441,6 @@ void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
   }
   
 }
-
 void printMac(uint8_t mac[6]){
   char macString[20];
   for (int i = 0; i < 6; i++) {
@@ -1468,6 +1484,9 @@ void espnowSendFunction(String data){
       }
     }
   }
+}
+void websocketListener(String data){
+  ws.textAll(data);
 }
 String vc(std::vector<String> vector,int index){
   if(vector.size()>index){
