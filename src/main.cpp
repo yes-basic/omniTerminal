@@ -326,6 +326,7 @@ long testTime;
   const String localIPURL = "http://4.3.2.1";
   // Web server
   AsyncWebServer server(80);
+  
   AsyncWebSocket ws("/ws"); // WebSocket server on the "/ws" path
 
   String inputMessage = "No message";
@@ -353,50 +354,6 @@ long testTime;
       inCom.reprintCMD();
     }
   }
-  const char index_html[] PROGMEM = R"rawliteral(
-    <!DOCTYPE HTML><html>
-    <head>
-      <title>ESP32 WebSocket</title>
-      <script src="ansi_up.min.js"></script>
-      <script>
-        var ws;
-        var ansi_up = new AnsiUp();
-        function init() {
-          ws = new WebSocket('ws://' + location.hostname + '/ws');
-          ws.onmessage = function(event) {
-            var terminal = document.getElementById("terminal");
-            var html = ansi_up.ansi_to_html(event.data);
-            terminal.innerHTML += html;
-            terminal.scrollTop = terminal.scrollHeight;
-          };
-        
-          document.getElementById("input").addEventListener("keydown", function(event) {
-            if (event.key === "Enter") {
-              send();
-              event.preventDefault(); // Prevent the default action (form submission)
-            }
-          });
-        }
-
-        function send() {
-          var input = document.getElementById("input").value;
-          ws.send(input);
-          document.getElementById("input").value = "";
-        }
-        window.onload = init;
-      </script>
-    </head>
-    <body>
-      <h1>ESP32 WebSocket Terminal</h1>
-      <div id="terminal" style="background-color: black; color: white; padding: 10px; white-space: pre-wrap; height: 300px; overflow-y: auto;"></div>
-      <input type="text" id="input" placeholder="Type a message..." style="width: 100%;">
-      <button onclick="send()">Send</button>
-      <h2>
-        <a href="http://4.3.2.1/update">Update portal</a>
-      </h2>
-    </body>
-    </html>
-  )rawliteral";
   
 
   void printRequestDetails(AsyncWebServerRequest *request) {
@@ -1257,23 +1214,21 @@ void identifyCommand(String command){
                 // Start DNS server to redirect all queries to the ESP32's IP
                 dnsServer.start(DNS_PORT, "*", localIP);  // '*' matches all domains
 
+                
+
+                if(!SPIFFS.begin(true)){
+                  inCom.println("An Error has occurred while mounting SPIFFS");
+                  return;
+                }
                 // Set up the web server
                 server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
                   //if (!request->authenticate("hello", "world")) {
                   //  return request->requestAuthentication();
                   //}
                   printRequestDetails(request);
-                  request->send_P(200, "text/html", index_html);
+                  request->send(SPIFFS, "/terminal.html", "text/html");
                 });
-
-                if(!SPIFFS.begin(true)){
-                  inCom.println("An Error has occurred while mounting SPIFFS");
-                  return;
-                }
-                //server.on("/ansi_up.js", HTTP_GET, [](AsyncWebServerRequest *request){
-                //  request->send(SPIFFS, "/ansi_up.js", "application/javascript");
-                //  inCom.println("served",green);
-                //});
+                
                 server.serveStatic("/ansi_up.min.js",SPIFFS,"/ansi_up.min.js");
 
 
@@ -1295,6 +1250,7 @@ void identifyCommand(String command){
                 server.addHandler(&ws);
                 // Start the web server
                 server.begin();
+                
                 inCom.registerListenerFunction("websocket",websocketListener);
                   
               break;}
