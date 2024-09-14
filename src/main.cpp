@@ -231,7 +231,8 @@ long testTime;
       "/run",
       "/test",
       "/usb",
-      "/wifi"
+      "/wifi",
+      "/reset"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -1260,6 +1261,10 @@ void identifyCommand(String command){
               break;}
 
           }
+        break;}
+      //reset
+        case 11:{
+          esp_restart();
         break;}
     }
   
