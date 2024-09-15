@@ -291,7 +291,7 @@ long testTime;
       "REM",
       "DELAY",
       "MSC",
-
+      "hex"
 
     };
     char usbModkeyIndex[50][20]={
@@ -299,7 +299,39 @@ long testTime;
       "ENTER",
       "TAB",
       "ALT",
-      "SHIFT"
+      "SHIFT",
+      "CTRL",
+      "COMMAND",
+      "ESCAPE",
+      "PAUSE",
+      "PRINTSCREEN",
+      "MENU",
+      "BACKSPACE",
+      "DELETE",
+      "UP",
+      "LEFT",
+      "DOWN",
+      "RIGHT",
+      "PAGEUP",
+      "PAGEDOWN",
+      "HOME",
+      "END",
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "F6",
+      "F7",
+      "F8",
+      "F9",
+      "F10",
+      "F11",
+      "F12",
+      "SPACE",
+      "INSERT",
+      "CAPSLOCK"
+      
 
 
 
@@ -1103,15 +1135,15 @@ void identifyCommand(String command){
             if(usbTryInit()){
               switch (inCom.multiComp(vc(commandVector,1),usbIndex))
               {
-                //norec
+                //other
                   case -1:{
                     
                     for(int i=1;strcmp(vc(commandVector,i).c_str(),"");i++){
                       switch (inCom.multiComp(vc(commandVector,i),usbModkeyIndex)){
                         //single char/ norec
                           case -1:{
-                            if(strlen(commandArray[i])==1){
-                              Keyboard.press(commandArray[i][0]);
+                            if(vc(commandVector,i).length()==1){
+                              Keyboard.press(vc(commandVector,i).charAt(0));
                             }else{
                               inCom.noRec("usb");
                             }
@@ -1137,6 +1169,131 @@ void identifyCommand(String command){
                           case 4:{
                             Keyboard.press(KEY_LEFT_SHIFT);
                           break;}
+                        //CTRL
+                          case 5:{
+                            Keyboard.press(KEY_LEFT_CTRL);
+                          break;}
+                        //COMMAND
+                          case 6:{
+                            Keyboard.press(KEY_LEFT_GUI);
+                          break;}
+                        //ESCAPE
+                          case 7:{
+                            Keyboard.press(KEY_ESC);
+                          break;}
+                        //PAUSE
+                          case 8:{
+                            Keyboard.press(0xD0);
+                          break;}
+                        //PRINTSCREEN
+                          case 9:{
+                            Keyboard.press(0xCE);
+                          break;}
+                        //MENU
+                          case 10:{
+                            Keyboard.press(0x65);
+                          break;}
+                        //BACKSPACE
+                          case 11:{
+                            Keyboard.press(KEY_BACKSPACE);
+                          break;}
+                        //DELETE
+                          case 12:{
+                            Keyboard.press(KEY_DELETE);
+                          break;}
+                        //UP
+                          case 13:{
+                            Keyboard.press(KEY_UP_ARROW);
+                          break;}
+                        //LEFT
+                          case 14:{
+                            Keyboard.press(KEY_LEFT_ARROW);
+                          break;}
+                        //DOWN
+                          case 15:{
+                            Keyboard.press(KEY_DOWN_ARROW);
+                          break;}
+                        //RIGHT
+                          case 16:{
+                            Keyboard.press(KEY_RIGHT_ARROW);
+                          break;}
+                        //PAGEUP
+                          case 17:{
+                            Keyboard.press(KEY_PAGE_UP);
+                          break;}
+                        //PAGEDOWN
+                          case 18:{
+                            Keyboard.press(KEY_PAGE_DOWN);
+                          break;}
+                        //HOME
+                          case 19:{
+                            Keyboard.press(KEY_HOME);
+                          break;}
+                        //END
+                          case 20:{
+                            Keyboard.press(KEY_END);
+                          break;}
+                        //F1
+                          case 21:{
+                            Keyboard.press(KEY_F1);
+                          break;}
+                        //F2
+                          case 22:{
+                            Keyboard.press(KEY_F2);
+                          break;}
+                        //F3
+                          case 23:{
+                            Keyboard.press(KEY_F3);
+                          break;}
+                        //F4
+                          case 24:{
+                            Keyboard.press(KEY_F4);
+                          break;}
+                        //F5
+                          case 25:{
+                            Keyboard.press(KEY_F5);
+                          break;}
+                        //F6
+                          case 26:{
+                            Keyboard.press(KEY_F6);
+                          break;}
+                        //F7
+                          case 27:{
+                            Keyboard.press(KEY_F7);
+                          break;}
+                        //F8
+                          case 28:{
+                            Keyboard.press(KEY_F8);
+                          break;}
+                        //F9
+                          case 29:{
+                            Keyboard.press(KEY_F9);
+                          break;}
+                        //F10
+                          case 30:{
+                            Keyboard.press(KEY_F10);
+                          break;}
+                        //F11
+                          case 31:{
+                            Keyboard.press(KEY_F11);
+                          break;}
+                        //F12
+                          case 32:{
+                            Keyboard.press(KEY_F12);
+                          break;}
+                        //SPACE
+                          case 33:{
+                            Keyboard.press(' ');
+                          break;}
+                        //INSERT
+                          case 34:{
+                            Keyboard.press(KEY_INSERT);
+                          break;}
+                        //CAPSLOCK
+                          case 35:{
+                            Keyboard.press(KEY_CAPS_LOCK);
+                          break;}
+                        
                       }
                     }
                     Keyboard.releaseAll();
@@ -1152,7 +1309,7 @@ void identifyCommand(String command){
                   break;}
                 //DELAY
                   case 2:{
-                    vTaskDelay(atoi(commandArray[2]));
+                    vTaskDelay(vc(commandVector,2).toInt());
                   break;}
                 //MSC
                   case 3:{
@@ -1167,6 +1324,11 @@ void identifyCommand(String command){
                     #else
                       inCom.println("SD_MMC is disabled for this device!",red);
                     #endif
+                  break;}
+                //hex
+                  case 4:{
+                    Keyboard.press(strtol(vc(commandVector,2).c_str(),NULL,16));
+                    Keyboard.release(strtol(vc(commandVector,2).c_str(),NULL,16));
                   break;}
                 
               }
