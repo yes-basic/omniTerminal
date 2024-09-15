@@ -931,7 +931,7 @@ void identifyCommand(String command){
                   espnowMessage.msgID=2;
                   espnowMessage.msgOrder=0;
                   esp_err_t result;
-
+                  
                   if(command.length()-12<=200){
                     strcpy(espnowMessage.command,command.substring(12).c_str());
                         
@@ -1096,18 +1096,18 @@ void identifyCommand(String command){
         break;}
       //usb
         case 9:{
-          if(strcmp(commandArray[1],"deinit")==0){
+          if(vc(commandVector,1).equals("deinit")){
             Keyboard.end();
             usbInit=false;
           }else{
             if(usbTryInit()){
-              switch (inCom.multiComp(commandArray[1],usbIndex))
+              switch (inCom.multiComp(vc(commandVector,1),usbIndex))
               {
                 //norec
                   case -1:{
                     
-                    for(int i=1;strcmp(commandArray[i],"");i++){
-                      switch (inCom.multiComp(commandArray[i],usbModkeyIndex)){
+                    for(int i=1;strcmp(vc(commandVector,i).c_str(),"");i++){
+                      switch (inCom.multiComp(vc(commandVector,i),usbModkeyIndex)){
                         //single char/ norec
                           case -1:{
                             if(strlen(commandArray[i])==1){
@@ -1143,15 +1143,7 @@ void identifyCommand(String command){
                   break;}
                 //STRING
                   case 0:{
-                    char USBsendString[200];
-                    strcpy(USBsendString,commandArray[2]);
-                    for(int i=0;i<20;i++){
-                      if(strcmp(commandArray[i+3],"")){
-                        strcat(USBsendString," ");
-                        strcat(USBsendString,commandArray[i+3]);
-                      }
-                    }
-                    Keyboard.print(USBsendString);
+                    Keyboard.print(command.substring(12));
                   break;}
                 //REM
                   case 1:{
