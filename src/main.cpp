@@ -232,7 +232,9 @@ long testTime;
       "/test",
       "/usb",
       "/wifi",
-      "/reset"
+      "/reset",
+      "/ducky",
+      "/sducky"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -1053,78 +1055,59 @@ void identifyCommand(String command){
 
       //run
         case 7:{
-            //file
-              if(!SPIFFS.begin(true)){
-                inCom.println("An Error has occurred while mounting SPIFFS");
-                return;
+          //file
+            if(!SPIFFS.begin(true)){
+              inCom.println("An Error has occurred while mounting SPIFFS");
+              return;
+            }
+            
+            if(SPIFFS.exists(vc(commandVector,1).c_str())){
+              fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
+              while(runFile.available()){
+                String startCommand = runFile.readStringUntil('\n');
+                startCommand.trim();
+                inCom.println(startCommand,green);
+                identifyCommand(startCommand);
+                inCom.flush(false);
               }
-              
-              if(SPIFFS.exists(vc(commandVector,1).c_str())){
-                fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
-                while(runFile.available()){
-                  String startCommand = runFile.readStringUntil('\n');
-                  startCommand.trim();
-                  inCom.println(startCommand);
-                  identifyCommand(startCommand);
+              runFile.close();
+            }else{
+              String fileLocation="/sdcard"+vc(commandVector,1);        
+              FILE *SDrunFile = fopen(fileLocation.c_str(), "r");
+              if (SDrunFile != NULL) {
+                String fileContent;
+                char ch;
+                
+                // Read the entire file into a String
+                while ((ch = fgetc(SDrunFile)) != char(-1)) {
+                  if(ch=='\n'){
+                    fileContent.trim();  // Remove any leading or trailing whitespace
+                    inCom.println(fileContent, green);
+                    identifyCommand(fileContent);
+                    fileContent.clear();
+                    inCom.flush(false);
+                  }else{
+                    fileContent += ch;
+                  }
+                }
+                if(!fileContent.isEmpty()){
+                  fileContent.trim();  // Remove any leading or trailing whitespace
+                  inCom.println(fileContent, green);
+                  identifyCommand(fileContent);
+                  fileContent.clear();
                   inCom.flush(false);
                 }
-                runFile.close();
+                fclose(SDrunFile);
               }else{
-                String fileLocation="/sdcard"+vc(commandVector,1);        
-                FILE *SDrunFile = fopen(fileLocation.c_str(),"r");
-                if(SDrunFile!=NULL){
-                  char buffer[256];
-                  // Read and print contents line by line
-                  while (fgets(buffer, sizeof(buffer), SDrunFile) != NULL) {
-                      String bufferString=buffer;
-                      bufferString.trim();
-                      inCom.println(bufferString,green);
-                      identifyCommand(bufferString);
-                      inCom.flush(false);
-                  }
-                  fclose(SDrunFile);
-                }else{
-                  inCom.print("file not found at: ",red);
-                  inCom.println(vc(commandVector,1),red);
-                }
+                inCom.print("file not found at: ",red);
+                inCom.println(vc(commandVector,1),red);
               }
-                
+            }
+              
         break;}
       //test
         case 8:{
-          FILE *thing = fopen("/sdcard/hello.txt","r");
-          if(thing!=NULL){
-            char buffer[256];
-            // Read and print contents line by line
-            while (fgets(buffer, sizeof(buffer), thing) != NULL) {
-                inCom.println(buffer);
-            }
-            fclose(thing);
-          }else{
-            inCom.println("file not found");
-          }
-          /*
-            DIR *dir = opendir("/sdcard");
-            
-            if (dir == NULL) {
-                inCom.println("Failed to open directory");
-                return;
-            }
-
-            struct dirent *entry;
-
-            
-            while ((entry = readdir(dir)) != NULL) {
-                if (entry->d_type == DT_REG) {
-                    inCom.print("File: ");
-                    inCom.println(entry->d_name);
-                } else if (entry->d_type == DT_DIR) {
-                    inCom.print("Directory: ");
-                    inCom.println(entry->d_name);
-                }
-            }
-            closedir(dir);
-            */
+          inCom.println(char(-1));
         break;}
       //usb
         case 9:{
@@ -1419,6 +1402,116 @@ void identifyCommand(String command){
       //reset
         case 11:{
           esp_restart();
+        break;}
+      //ducky
+        case 12:{
+          //file
+            if(!SPIFFS.begin(true)){
+              inCom.println("An Error has occurred while mounting SPIFFS");
+              return;
+            }
+            
+            if(SPIFFS.exists(vc(commandVector,1).c_str())){
+              fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
+              while(runFile.available()){
+                String startCommand = runFile.readStringUntil('\n');
+                startCommand.trim();
+                inCom.println(startCommand,green);
+                startCommand="/usb "+startCommand;
+                identifyCommand(startCommand);
+                inCom.flush(false);
+              }
+              runFile.close();
+            }else{
+              String fileLocation="/sdcard"+vc(commandVector,1);        
+              FILE *SDrunFile = fopen(fileLocation.c_str(), "r");
+              if (SDrunFile != NULL) {
+                String fileContent;
+                char ch;
+                
+                // Read the entire file into a String
+                while ((ch = fgetc(SDrunFile)) != char(-1)) {
+                  if(ch=='\n'){
+                    fileContent.trim();  // Remove any leading or trailing whitespace
+                    inCom.println(fileContent, green);
+                    fileContent="/usb "+fileContent;
+                    identifyCommand(fileContent);
+                    fileContent.clear();
+                    inCom.flush(false);
+                  }else{
+                    fileContent += ch;
+                  }
+                }
+                if(!fileContent.isEmpty()){
+                  fileContent.trim();  // Remove any leading or trailing whitespace
+                  inCom.println(fileContent, green);
+                  fileContent="/usb "+fileContent;
+                  identifyCommand(fileContent);
+                  fileContent.clear();
+                  inCom.flush(false);
+                }
+                fclose(SDrunFile);
+              }else{
+                inCom.print("file not found at: ",red);
+                inCom.println(vc(commandVector,1),red);
+              }
+            }
+              
+       break;}
+       //sducky
+        case 13:{
+          //file
+            if(!SPIFFS.begin(true)){
+              inCom.println("An Error has occurred while mounting SPIFFS");
+              return;
+            }
+            
+            if(SPIFFS.exists(vc(commandVector,1).c_str())){
+              fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
+              while(runFile.available()){
+                String startCommand = runFile.readStringUntil('\n');
+                startCommand.trim();
+                inCom.println(startCommand,green);
+                startCommand="/espnow cmd /usb "+startCommand;
+                identifyCommand(startCommand);
+                inCom.flush(false);
+              }
+              runFile.close();
+            }else{
+              String fileLocation="/sdcard"+vc(commandVector,1);        
+              FILE *SDrunFile = fopen(fileLocation.c_str(), "r");
+              if (SDrunFile != NULL) {
+                String fileContent;
+                char ch;
+                
+                // Read the entire file into a String
+                while ((ch = fgetc(SDrunFile)) != char(-1)) {
+                  if(ch=='\n'){
+                    fileContent.trim();  // Remove any leading or trailing whitespace
+                    inCom.println(fileContent, green);
+                    fileContent="/espnow cmd /usb "+fileContent;
+                    identifyCommand(fileContent);
+                    fileContent.clear();
+                    inCom.flush(false);
+                  }else{
+                    fileContent += ch;
+                  }
+                }
+                if(!fileContent.isEmpty()){
+                  fileContent.trim();  // Remove any leading or trailing whitespace
+                  inCom.println(fileContent, green);
+                  fileContent="/espnow cmd /usb "+fileContent;
+                  identifyCommand(fileContent);
+                  fileContent.clear();
+                  inCom.flush(false);
+                }
+                fclose(SDrunFile);
+              }else{
+                inCom.print("file not found at: ",red);
+                inCom.println(vc(commandVector,1),red);
+              }
+            }
+              
         break;}
     }
   
