@@ -1107,7 +1107,24 @@ void identifyCommand(String command){
         break;}
       //test
         case 8:{
-          inCom.println(char(-1));
+          switch (vc(commandVector,1).toInt())
+          {
+          case 1:{
+            inCom.println("test 1 activated");
+          }break;
+
+          case 2:{
+            inCom.println("test 2 activated");
+          }break;
+
+          case 3:{
+            inCom.println("test 3 activated");
+          }break;
+          
+          default:{
+            inCom.println(red,"not recognized test");
+          }break;
+          }
         break;}
       //usb
         case 9:{
@@ -1458,61 +1475,61 @@ void identifyCommand(String command){
             }
               
        break;}
-       //sducky
-        case 13:{
-          //file
-            if(!SPIFFS.begin(true)){
-              inCom.println("An Error has occurred while mounting SPIFFS");
-              return;
+      //sducky
+      case 13:{
+        //file
+          if(!SPIFFS.begin(true)){
+            inCom.println("An Error has occurred while mounting SPIFFS");
+            return;
+          }
+          
+          if(SPIFFS.exists(vc(commandVector,1).c_str())){
+            fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
+            while(runFile.available()){
+              String startCommand = runFile.readStringUntil('\n');
+              startCommand.trim();
+              inCom.println(startCommand,green);
+              startCommand="/espnow cmd /usb "+startCommand;
+              identifyCommand(startCommand);
+              inCom.flush(false);
             }
-            
-            if(SPIFFS.exists(vc(commandVector,1).c_str())){
-              fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
-              while(runFile.available()){
-                String startCommand = runFile.readStringUntil('\n');
-                startCommand.trim();
-                inCom.println(startCommand,green);
-                startCommand="/espnow cmd /usb "+startCommand;
-                identifyCommand(startCommand);
-                inCom.flush(false);
-              }
-              runFile.close();
-            }else{
-              String fileLocation="/sdcard"+vc(commandVector,1);        
-              FILE *SDrunFile = fopen(fileLocation.c_str(), "r");
-              if (SDrunFile != NULL) {
-                String fileContent;
-                char ch;
-                
-                // Read the entire file into a String
-                while ((ch = fgetc(SDrunFile)) != char(-1)) {
-                  if(ch=='\n'){
-                    fileContent.trim();  // Remove any leading or trailing whitespace
-                    inCom.println(fileContent, green);
-                    fileContent="/espnow cmd /usb "+fileContent;
-                    identifyCommand(fileContent);
-                    fileContent.clear();
-                    inCom.flush(false);
-                  }else{
-                    fileContent += ch;
-                  }
-                }
-                if(!fileContent.isEmpty()){
+            runFile.close();
+          }else{
+            String fileLocation="/sdcard"+vc(commandVector,1);        
+            FILE *SDrunFile = fopen(fileLocation.c_str(), "r");
+            if (SDrunFile != NULL) {
+              String fileContent;
+              char ch;
+              
+              // Read the entire file into a String
+              while ((ch = fgetc(SDrunFile)) != char(-1)) {
+                if(ch=='\n'){
                   fileContent.trim();  // Remove any leading or trailing whitespace
                   inCom.println(fileContent, green);
                   fileContent="/espnow cmd /usb "+fileContent;
                   identifyCommand(fileContent);
                   fileContent.clear();
                   inCom.flush(false);
+                }else{
+                  fileContent += ch;
                 }
-                fclose(SDrunFile);
-              }else{
-                inCom.print("file not found at: ",red);
-                inCom.println(vc(commandVector,1),red);
               }
+              if(!fileContent.isEmpty()){
+                fileContent.trim();  // Remove any leading or trailing whitespace
+                inCom.println(fileContent, green);
+                fileContent="/espnow cmd /usb "+fileContent;
+                identifyCommand(fileContent);
+                fileContent.clear();
+                inCom.flush(false);
+              }
+              fclose(SDrunFile);
+            }else{
+              inCom.print("file not found at: ",red);
+              inCom.println(vc(commandVector,1),red);
             }
-              
-        break;}
+          }
+            
+      break;}
     }
   
 }
