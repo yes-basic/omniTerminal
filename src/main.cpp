@@ -198,6 +198,7 @@ long testTime;
   fs::File file;
   bool usbInit=false;
   std::vector<String> commandQueue;
+  int lastCat=0;
 //init espnow var
   typedef struct struct_message {
     char command[200];
@@ -234,7 +235,8 @@ long testTime;
       "/wifi",
       "/reset",
       "/ducky",
-      "/sducky"
+      "/sducky",
+      "/meow"
     };
     int commandIndexWords=sizeof(commandIndex)/sizeof(commandIndex[0]);
   //IR protocols
@@ -1111,6 +1113,62 @@ void identifyCommand(String command){
           {
           case 1:{
             inCom.println("test 1 activated");
+            #define MAX_CLIENTS 4
+            // Define the WiFi channel to be used (channel 6 in this case)
+            #define WIFI_CHANNEL 6
+
+            // Set the WiFi mode to access point and station
+            WiFi.mode(WIFI_MODE_AP);
+            const IPAddress subnetMask(255, 255, 255, 0);
+            WiFi.softAPConfig(localIP, gatewayIP, subnetMask);
+            WiFi.softAP(ssid, password, WIFI_CHANNEL, 0, MAX_CLIENTS);
+
+            inCom.println("Access Point Started");
+            inCom.print("IP Address: ");
+            inCom.println(WiFi.softAPIP().toString());
+            // Start DNS server to redirect all queries to the ESP32's IP
+            dnsServer.start(DNS_PORT, "*", localIP);  // '*' matches all domains
+
+            
+
+            if(!SPIFFS.begin(true)){
+              inCom.println("An Error has occurred while mounting SPIFFS");
+              return;
+            }
+            // Set up the web server
+            server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+              //if (!request->authenticate("hello", "world")) {
+              //  return request->requestAuthentication();
+              //}
+              printRequestDetails(request);
+              request->send(SPIFFS, "/terminal.html", "text/html");
+            });
+            
+            server.serveStatic("/ansi_up.min.js",SPIFFS,"/ansi_up.min.js");
+
+
+            server.on("/generate_204", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });		   // android captive portal redirect
+            server.on("/redirect", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });			   // microsoft redirect
+            server.on("/hotspot-detect.html", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });  // apple call home
+            server.on("/canonical.html", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });	   // firefox captive portal call home
+            server.on("/success.txt", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->send(200); });					   // firefox captive portal call home
+            server.on("/ncsi.txt", [](AsyncWebServerRequest *request) {printRequestDetails(request); request->redirect(localIPURL); });
+
+
+            server.onNotFound([](AsyncWebServerRequest *request){
+              //request->send(200, "text/html", "<h1>Page Not Found, but here is the captive portal!</h1>");
+              printRequestDetails(request);
+              request->redirect("/");
+            });
+            ElegantOTA.begin(&server,"admin","apocalypse");
+            ws.onEvent(webSocketEvent);
+            server.addHandler(&ws);
+            // Start the web server
+            server.begin();
+            
+            inCom.registerListenerFunction("websocket",websocketListener);
+
+            
           }break;
 
           case 2:{
@@ -1119,6 +1177,7 @@ void identifyCommand(String command){
 
           case 3:{
             inCom.println("test 3 activated");
+            inCom.println(random(1,4));
           }break;
           
           default:{
@@ -1476,60 +1535,103 @@ void identifyCommand(String command){
               
        break;}
       //sducky
-      case 13:{
-        //file
-          if(!SPIFFS.begin(true)){
-            inCom.println("An Error has occurred while mounting SPIFFS");
-            return;
-          }
-          
-          if(SPIFFS.exists(vc(commandVector,1).c_str())){
-            fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
-            while(runFile.available()){
-              String startCommand = runFile.readStringUntil('\n');
-              startCommand.trim();
-              inCom.println(startCommand,green);
-              startCommand="/espnow cmd /usb "+startCommand;
-              identifyCommand(startCommand);
-              inCom.flush(false);
+        case 13:{
+          //file
+            if(!SPIFFS.begin(true)){
+              inCom.println("An Error has occurred while mounting SPIFFS");
+              return;
             }
-            runFile.close();
-          }else{
-            String fileLocation="/sdcard"+vc(commandVector,1);        
-            FILE *SDrunFile = fopen(fileLocation.c_str(), "r");
-            if (SDrunFile != NULL) {
-              String fileContent;
-              char ch;
-              
-              // Read the entire file into a String
-              while ((ch = fgetc(SDrunFile)) != char(-1)) {
-                if(ch=='\n'){
+            
+            if(SPIFFS.exists(vc(commandVector,1).c_str())){
+              fs::File runFile=SPIFFS.open(vc(commandVector,1).c_str());
+              while(runFile.available()){
+                String startCommand = runFile.readStringUntil('\n');
+                startCommand.trim();
+                inCom.println(startCommand,green);
+                startCommand="/espnow cmd /usb "+startCommand;
+                identifyCommand(startCommand);
+                inCom.flush(false);
+              }
+              runFile.close();
+            }else{
+              String fileLocation="/sdcard"+vc(commandVector,1);        
+              FILE *SDrunFile = fopen(fileLocation.c_str(), "r");
+              if (SDrunFile != NULL) {
+                String fileContent;
+                char ch;
+                
+                // Read the entire file into a String
+                while ((ch = fgetc(SDrunFile)) != char(-1)) {
+                  if(ch=='\n'){
+                    fileContent.trim();  // Remove any leading or trailing whitespace
+                    inCom.println(fileContent, green);
+                    fileContent="/espnow cmd /usb "+fileContent;
+                    identifyCommand(fileContent);
+                    fileContent.clear();
+                    inCom.flush(false);
+                  }else{
+                    fileContent += ch;
+                  }
+                }
+                if(!fileContent.isEmpty()){
                   fileContent.trim();  // Remove any leading or trailing whitespace
                   inCom.println(fileContent, green);
                   fileContent="/espnow cmd /usb "+fileContent;
                   identifyCommand(fileContent);
                   fileContent.clear();
                   inCom.flush(false);
-                }else{
-                  fileContent += ch;
                 }
+                fclose(SDrunFile);
+              }else{
+                inCom.print("file not found at: ",red);
+                inCom.println(vc(commandVector,1),red);
               }
-              if(!fileContent.isEmpty()){
-                fileContent.trim();  // Remove any leading or trailing whitespace
-                inCom.println(fileContent, green);
-                fileContent="/espnow cmd /usb "+fileContent;
-                identifyCommand(fileContent);
-                fileContent.clear();
-                inCom.flush(false);
-              }
-              fclose(SDrunFile);
-            }else{
-              inCom.print("file not found at: ",red);
-              inCom.println(vc(commandVector,1),red);
             }
-          }
+              
+        break;}
+      //meow
+        case 14:{
+          int newCat;
+          do{
+            newCat=random(1,7);
+          }while(newCat==lastCat);
+          lastCat=newCat;
+
+          switch(/*newCat*/vc(commandVector,1)==""?newCat:vc(commandVector,1).toInt()){
+
+            case 1:{
+              inCom.println("    |\\__/,|   (`\\\n  _.|o o  |_   ) )\n-(((---(((--------");
+            break;}
+
+            case 2:{
+              inCom.println("      |\\      _,,,---,,_\nZZZzz /,`.-'`'    -.  ;-;;,_\n     |,4-  ) )-,_. ,\\ (  `'-'\n    '---''(_/--'  `-'\\_)");
+            break;}
+
+            case 3:{
+              inCom.println(" _._     _,-'\"\"`-._\n(,-.`._,'(       |\\`-/|\n    `-.-' \\ )-`( , o o)\n          `-    \\`_`\"'-\"");
+            break;}
+
+            case 4:{
+              inCom.println("                   _ |\\_\n                   \\` ..\\\n              __,.-\" =__Y=\n            .\"        )\n      _    /   ,    \\/\\_\n     ((____|    )_-\\ \\_-`\n     `-----'`-----` `--`");
+            break;}
             
-      break;}
+            case 5:{
+              inCom.println("      /\\_/\\\n /\\  / o o \\\n//\\\\ \\~(*)~/\n`  \\/   ^ /\n   | \\|| ||\n   \\ '|| ||\n    \\)()-())");
+            break;}
+            
+            case 6:{
+              inCom.println("  |\\'/-..--.\n / _ _   ,  ;\n`~=`Y'~_<._./\n <`-....__.'  ");
+            break;}
+
+            case 7:{
+              inCom.println("   |\\---/|\n   | ,_, |\n    \\_`_/-..----.\n ___/ `   ' ,\"\"+ \\  \n(__...'   __\\    |`.___.';\n  (_,...'(_,.`__)/'.....+");
+            break;}
+            
+
+          }
+          
+        break;}
+    
     }
   
 }
